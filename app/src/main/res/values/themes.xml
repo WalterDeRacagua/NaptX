@@ -1,0 +1,49 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.OfflinePaymentSystem" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Colores principales (Azul-teal del koala) -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Colores secundarios/accent (Naranja blockchain) -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_dark</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Colores de fondo -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorSurface">@color/background_light</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+
+        <!-- Colores de estado -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+
+        <!-- Personalización de botones -->
+        <item name="buttonStyle">@style/Widget.App.Button</item>
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.App.Button.Outlined</item>
+    </style>
+
+    <style name="Theme.OfflinePaymentSystem" parent="Base.Theme.OfflinePaymentSystem" />
+
+    <!-- Estilo personalizado para botones primarios -->
+    <style name="Widget.App.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Estilo personalizado para botones outline -->
+    <style name="Widget.App.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

@@ -1,0 +1,30 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Theme for dark mode using logo colors -->
+    <style name="Base.Theme.OfflinePaymentSystem" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Colores principales -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Colores secundarios -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_dark</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Fondo oscuro del logo -->
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="colorSurface">@color/background_medium</item>
+        <item name="colorOnSurface">@color/text_on_dark</item>
+
+        <!-- Colores de estado -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+
+        <!-- Personalización de botones -->
+        <item name="buttonStyle">@style/Widget.App.Button</item>
+        <item name="materialButtonStyle">@style/Widget.App.Button</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.App.Button.Outlined</item>
+    </style>
+
+    <style name="Theme.OfflinePaymentSystem" parent="Base.Theme.OfflinePaymentSystem" />
+</resources>

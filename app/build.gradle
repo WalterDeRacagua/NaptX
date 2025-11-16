@@ -1,0 +1,78 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.example.offlinepaymentsystem'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.example.offlinepaymentsystem"
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0']
+        }
+    }
+}
+
+dependencies {
+    // ===== AndroidX Core (usando catálogo) =====
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+
+    // ===== Lifecycle & ViewModel =====
+    // Para MVVM: separar lógica de la vista
+    implementation libs.lifecycle.viewmodel
+    implementation libs.lifecycle.livedata
+    implementation libs.lifecycle.runtime
+
+    // ===== Room Database =====
+    // Base de datos local para whitelist y tickets
+    implementation libs.room.runtime
+    annotationProcessor libs.room.compiler
+
+    // ===== Web3j =====
+    // Interactuar con Ethereum: firmar transacciones, conectar con Sepolia
+    implementation libs.core
+
+    // ===== ZXing para QR =====
+    // Generar y escanear códigos QR para pagos offline
+    implementation libs.zxing.android.embedded
+    implementation libs.zxing.core
+
+    // ===== Gson =====
+    // Convertir objetos Java <-> JSON (para tickets y datos)
+    implementation libs.gson
+
+    // ===== OkHttp =====
+    // Cliente HTTP (requerido por Web3j para conexiones RPC)
+    implementation libs.okhttp
+    // ===== Security =====
+    // Cifrado de datos sensibles usando Android Keystore
+    implementation libs.security.crypto
+
+    // ===== Testing =====
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+}

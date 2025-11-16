@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">OfflinePaymentSystem</string>
+    <string name="naptx">NaptX</string>
+    <string name="selecciona_tu_rol">Selecciona tu rol</string>
+    <string name="pagador">Pagador</string>
+    <string name="receptor">Receptor</string>
+    <string name="mis_wallets">Mis Wallets</string>
+    <string name="sincronizar_con_blockchain">Sincronizar con Blockchain</string>
+    <string name="desconectado">Desconectado</string>
+    <string name="logo_de_la_aplicaci_n">Logo de la aplicación</string>
+</resources>

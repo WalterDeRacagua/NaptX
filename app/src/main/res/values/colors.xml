@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores base del sistema -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores exactos del logo (extraídos del koala) -->
+    <color name="primary">#25B8D1</color>              <!-- Azul-teal del oso RGB(37,184,209) -->
+    <color name="primary_dark">#1D92A8</color>         <!-- Azul-teal oscuro (80% del original) -->
+    <color name="primary_light">#5FCCE0</color>        <!-- Azul-teal claro (120% del original) -->
+
+    <color name="accent">#F99A54</color>               <!-- Naranja blockchain RGB(249,154,84) -->
+    <color name="accent_dark">#D67A3A</color>          <!-- Naranja oscuro (80% del original) -->
+    <color name="accent_light">#FFB47D</color>         <!-- Naranja claro (120% del original) -->
+
+    <color name="background_dark">#15161E</color>      <!-- Fondo oscuro del logo RGB(21,22,30) -->
+    <color name="background_medium">#2A2B35</color>    <!-- Fondo medio (más claro) -->
+    <color name="background_light">#FFFFFF</color>     <!-- Fondo claro -->
+
+    <!-- Colores de estado de conexión (usando la paleta exacta) -->
+    <color name="status_disconnected">#FF6B6B</color>  <!-- Rojo suave para desconectado -->
+    <color name="status_connecting">#F99A54</color>    <!-- Naranja blockchain (sincronizando) -->
+    <color name="status_connected">#25B8D1</color>     <!-- Azul-teal del oso (conectado) -->
+
+    <!-- Colores de texto -->
+    <color name="text_primary">#000000</color>         <!-- Negro para texto principal -->
+    <color name="text_secondary">#757575</color>       <!-- Gris para texto secundario -->
+    <color name="text_hint">#BDBDBD</color>            <!-- Gris claro para hints -->
+    <color name="text_on_dark">#FFFFFF</color>         <!-- Blanco para texto en fondos oscuros -->
+
+    <!-- Colores funcionales -->
+    <color name="success">#4CAF50</color>              <!-- Verde éxito -->
+    <color name="error">#F44336</color>                <!-- Rojo error -->
+    <color name="warning">#FFC107</color>              <!-- Amarillo advertencia -->
+
+    <!-- Colores de blockchain (referencia) -->
+    <color name="ethereum_purple">#627EEA</color>      <!-- Morado Ethereum -->
+    <color name="sepolia_blue">#4A90E2</color>         <!-- Azul Sepolia -->
+
+    <!-- Colores de botones (usando paleta exacta) -->
+    <color name="button_primary">#25B8D1</color>       <!-- Azul-teal del oso -->
+    <color name="button_accent">#F99A54</color>        <!-- Naranja blockchain -->
+    <color name="button_disabled">#BDBDBD</color>      <!-- Gris deshabilitado -->
+
+    <!-- Colores de tarjetas/cards -->
+    <color name="card_background">#F5F5F5</color>      <!-- Fondo de tarjetas -->
+    <color name="card_border">#E0E0E0</color>          <!-- Borde de tarjetas -->
+</resources>
