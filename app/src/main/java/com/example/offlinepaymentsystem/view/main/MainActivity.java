@@ -1,4 +1,4 @@
-package com.example.offlinepaymentsystem;
+package com.example.offlinepaymentsystem.view.main;
 
 import android.os.Bundle;
 import android.view.View;
@@ -8,6 +8,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+
+import com.example.offlinepaymentsystem.R;
 
 public class MainActivity extends AppCompatActivity {
 
