@@ -102,7 +102,7 @@
         app:layout_constraintTop_toBottomOf="@id/btnSincronizar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp"/>
+        android:layout_marginTop="16dp"/>
 
     <!-- Estado de conexión -->
     <TextView
