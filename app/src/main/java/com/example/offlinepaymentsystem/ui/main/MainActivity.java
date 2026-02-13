@@ -1,4 +1,4 @@
-package com.example.offlinepaymentsystem.view.main;
+package com.example.offlinepaymentsystem.ui.main;
 
 import android.os.Bundle;
 import android.view.View;
