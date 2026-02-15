@@ -1,4 +1,6 @@
 package com.example.offlinepaymentsystem.model;
+import androidx.annotation.NonNull;
+
 import java.util.HashMap;
 import java.util.Map;
 /**
@@ -76,6 +78,17 @@ public class Emisor {
 
     public void setRegistrado(boolean registrado) {
         this.registrado = registrado;
+    }
+    @NonNull
+    @Override
+    public String toString() {
+        return "Emisor{" +
+                "address='" + this.getAddress() + '\'' +
+                ", hashActual='" + this.getHashActual()+ '\'' +
+                ", whitelist=" + this.getWhitelist() +
+                ", timestampUltimoPago=" + this.getTimestampUltimoPago() +
+                ", registrado=" + this.isRegistrado() +
+                '}';
     }
 }
 

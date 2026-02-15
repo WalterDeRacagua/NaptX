@@ -1,4 +1,4 @@
 package com.example.offlinepaymentsystem.ui.pagador;
 
-public class PagadorActivity {
+public class EscanearRespuestaActivity {
 }

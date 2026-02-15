@@ -1,4 +1,4 @@
 package com.example.offlinepaymentsystem.ui.receptor;
 
-public class ReceptorActivity {
+public class ReceptorDashboardActivity {
 }
