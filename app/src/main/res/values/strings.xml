@@ -8,4 +8,5 @@
     <string name="sincronizar_con_blockchain">Sincronizar con Blockchain</string>
     <string name="desconectado">Desconectado</string>
     <string name="logo_de_la_aplicaci_n">Logo de la aplicación</string>
+    <string name="probar_web3manager">Probar Web3Manager</string>
 </resources>

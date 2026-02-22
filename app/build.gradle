@@ -26,7 +26,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
-        coreLibraryDesugaringEnabled true
+    }
+
+    buildFeatures {
+        viewBinding = false
     }
 
     packagingOptions {
@@ -37,7 +40,6 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 
     implementation libs.appcompat
     implementation libs.material
@@ -54,7 +56,7 @@ dependencies {
     annotationProcessor libs.room.compiler
 
     // ===== Web3j =====
-    implementation libs.core
+    implementation 'org.web3j:core:4.9.8'
 
     // ===== ZXing para QR =====
     implementation libs.zxing.android.embedded

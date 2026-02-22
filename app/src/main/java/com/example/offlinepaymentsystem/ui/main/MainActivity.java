@@ -1,5 +1,6 @@
 package com.example.offlinepaymentsystem.ui.main;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.offlinepaymentsystem.R;
+import com.example.offlinepaymentsystem.ui.test.TestConnectionActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -17,8 +19,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnReceptor;
     private Button btnWallets;
     private Button btnSincronizar;
+    private Button btnTestWeb3;
     private TextView tvEstadoConexion;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         btnReceptor = findViewById(R.id.btnReceptor);
         btnWallets = findViewById(R.id.btnWallets);
         btnSincronizar = findViewById(R.id.btnSincronizar);
+        btnTestWeb3 = findViewById(R.id.btnTestWeb3);
         tvEstadoConexion = findViewById(R.id.tvEstadoConexion);
 
         this.btnPagador.setOnClickListener(new View.OnClickListener(){
@@ -55,6 +58,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 onSyncronizeClicked();
             }
+        });
+
+        this.btnTestWeb3.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){onTestWeb3Clicked();}
         });
     }
 
@@ -86,5 +94,10 @@ public class MainActivity extends AppCompatActivity {
                 tvEstadoConexion.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.status_connected));
             }
         }, 4000);
+    }
+
+    private void onTestWeb3Clicked(){
+        Intent intent = new Intent(this, TestConnectionActivity.class);
+        startActivity(intent);
     }
 }
