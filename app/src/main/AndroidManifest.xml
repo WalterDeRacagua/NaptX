@@ -28,6 +28,9 @@
         </activity>
         <activity android:name=".ui.test.TestConnectionActivity" android:exported="false"/>
         <activity android:name=".ui.test.TestEstadoEmisorActivity" android:exported="false" />
+        <activity android:name=".ui.test.TestKeystoreActivity" android:exported="false" />
+        <activity android:name=".ui.wallet.CrearWalletActivity" android:exported="false" />
+
     </application>
 
 </manifest>

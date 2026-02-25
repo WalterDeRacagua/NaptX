@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo o ícono -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔐"
+            android:textSize="80sp"
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Crear Wallet"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Estado -->
+        <TextView
+            android:id="@+id/tvEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No tienes ninguna wallet.\nCrea una para empezar."
+            android:textSize="16sp"
+            android:textAlignment="center"
+            android:layout_marginBottom="32dp"
+            android:minHeight="80dp"/>
+
+        <!-- Address (inicialmente oculta) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tu Address:"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:id="@+id/tvLabelAddress"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tvAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="0x..."
+            android:textSize="14sp"
+            android:fontFamily="monospace"
+            android:padding="16dp"
+            android:background="#F5F5F5"
+            android:textAlignment="center"
+            android:layout_marginBottom="32dp"
+            android:visibility="gone"/>
+
+        <!-- Botón Crear Wallet -->
+        <Button
+            android:id="@+id/btnCrearWallet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔐 Crear Wallet"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Botón Continuar -->
+        <Button
+            android:id="@+id/btnContinuar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Continuar"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:enabled="false"
+            style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+        <!-- Nota informativa -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tu wallet se guardará de forma segura en el chip de seguridad de tu dispositivo."
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginTop="32dp"
+            android:textAlignment="center"
+            android:padding="16dp"
+            android:background="#F9F9F9"/>
+    </LinearLayout>
+</ScrollView>
