@@ -1,74 +1,74 @@
 package com.example.offlinepaymentsystem.model;
+
 import androidx.annotation.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
+
 /**
  * Representa a nuestro pagador semi-offline.
- **/
+ */
 public class Emisor {
 
-    private String address;
-    private String hashActual;
-    /**
-     * Ejemplo:
-     * 0xTiendaA: 30ETH
-     * 0xTiendaB: 70ETH
-     * */
-    private Map<String, Double> whitelist;
-    private long timestampUltimoPago;
-    private boolean registrado;
+    private String walletAddress;           // Address Ethereum
+    private byte[] hashActual;              // Hash encadenado actual (bytes32)
+    private byte[] deviceId;                // ID del dispositivo (bytes32)
+    private long timestampUltimoPago;       // Timestamp del último pago
+    private boolean registrado;             // ¿Está registrado en blockchain?
 
+    /**
+     * Whitelist: receptor → límite (en Wei como long)
+     * Ejemplo:
+     * 0xTiendaA: 30 ETH
+     * 0xTiendaB: 70 ETH
+     */
+    private Map<String, Long> whitelist;
 
     public Emisor() {
         this.whitelist = new HashMap<>();
-        this.timestampUltimoPago =0;
+        this.timestampUltimoPago = 0;
         this.registrado = false;
     }
 
-    public Emisor(String address, String HashActual){
-        this.address = address;
+    public Emisor(String walletAddress, byte[] hashActual) {
+        this.walletAddress = walletAddress;
         this.hashActual = hashActual;
         this.whitelist = new HashMap<>();
         this.timestampUltimoPago = 0;
         this.registrado = false;
     }
 
+    // GETTERS Y SETTERS
 
-
-    /**
-     * Getters y setters
-     * */
-
-    public String getAddress() {
-        return this.address;
+    public String getWalletAddress() {
+        return walletAddress;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setWalletAddress(String walletAddress) {
+        this.walletAddress = walletAddress;
     }
 
-    public String getHashActual() {
-        return this.hashActual;
+    public byte[] getHashActual() {
+        return hashActual;
     }
 
-    public void setHashActual(String hashActual) {
+    public void setHashActual(byte[] hashActual) {
         this.hashActual = hashActual;
     }
 
-    public Map<String, Double> getWhitelist() {
-        return this.whitelist;
+    public byte[] getDeviceId() {
+        return deviceId;
     }
 
-    public void setWhitelist(Map<String,Double> whitelist) {
-        this.whitelist = whitelist;
+    public void setDeviceId(byte[] deviceId) {
+        this.deviceId = deviceId;
     }
 
     public long getTimestampUltimoPago() {
-        return this.timestampUltimoPago;
+        return timestampUltimoPago;
     }
 
-    public void setTimestampUltimoPago(long timestampUltimoPago){
+    public void setTimestampUltimoPago(long timestampUltimoPago) {
         this.timestampUltimoPago = timestampUltimoPago;
     }
 
@@ -79,16 +79,46 @@ public class Emisor {
     public void setRegistrado(boolean registrado) {
         this.registrado = registrado;
     }
+
+    public Map<String, Long> getWhitelist() {
+        return whitelist;
+    }
+
+    public void setWhitelist(Map<String, Long> whitelist) {
+        this.whitelist = whitelist;
+    }
+
+    // MÉTODOS AUXILIARES
+    /*En hexadecimal es mucho más bonito para mostrárselo al usuario*/
+    public String getHashActualHex() {
+        if (hashActual == null) return "null";
+        StringBuilder sb = new StringBuilder("0x");
+        for (byte b : hashActual) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+
+    public String getDeviceIdHex() {
+        if (deviceId == null) return "null";
+        StringBuilder sb = new StringBuilder("0x");
+        for (byte b : deviceId) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
     @NonNull
     @Override
     public String toString() {
         return "Emisor{" +
-                "address='" + this.getAddress() + '\'' +
-                ", hashActual='" + this.getHashActual()+ '\'' +
-                ", whitelist=" + this.getWhitelist() +
-                ", timestampUltimoPago=" + this.getTimestampUltimoPago() +
-                ", registrado=" + this.isRegistrado() +
+                "walletAddress='" + walletAddress + '\'' +
+                ", hashActual=" + getHashActualHex() +
+                ", deviceId=" + getDeviceIdHex() +
+                ", timestampUltimoPago=" + timestampUltimoPago +
+                ", registrado=" + registrado +
+                ", whitelist=" + whitelist +
                 '}';
     }
 }
-

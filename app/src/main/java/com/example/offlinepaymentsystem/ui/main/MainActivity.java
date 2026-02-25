@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.ui.test.TestConnectionActivity;
+import com.example.offlinepaymentsystem.ui.test.TestEstadoEmisorActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -20,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnWallets;
     private Button btnSincronizar;
     private Button btnTestWeb3;
+    private Button btnTestEstadoEmisor;
     private TextView tvEstadoConexion;
 
     @Override
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
         btnWallets = findViewById(R.id.btnWallets);
         btnSincronizar = findViewById(R.id.btnSincronizar);
         btnTestWeb3 = findViewById(R.id.btnTestWeb3);
+        btnTestEstadoEmisor = findViewById(R.id.btnTestEstadoEmisor);
         tvEstadoConexion = findViewById(R.id.tvEstadoConexion);
 
         this.btnPagador.setOnClickListener(new View.OnClickListener(){
@@ -63,6 +66,11 @@ public class MainActivity extends AppCompatActivity {
         this.btnTestWeb3.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){onTestWeb3Clicked();}
+        });
+
+        this.btnTestEstadoEmisor.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){onTestEstadoEmisorClicked();}
         });
     }
 
@@ -98,6 +106,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void onTestWeb3Clicked(){
         Intent intent = new Intent(this, TestConnectionActivity.class);
+        startActivity(intent);
+    }
+
+    private void onTestEstadoEmisorClicked(){
+        Intent intent = new Intent(this, TestEstadoEmisorActivity.class);
         startActivity(intent);
     }
 }

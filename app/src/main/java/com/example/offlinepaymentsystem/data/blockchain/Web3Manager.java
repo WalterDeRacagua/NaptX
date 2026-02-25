@@ -1,4 +1,21 @@
 package com.example.offlinepaymentsystem.data.blockchain;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.Bytes32;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthCall;
+import com.example.offlinepaymentsystem.model.Emisor;
+
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
 
 import android.content.Context;
 import android.util.Log;
@@ -97,4 +114,76 @@ public class Web3Manager {
         }
     }
 
+
+    /**
+     * Obtener estado de un emisor desde el contrato
+     * @param addressEmisor Address del emisor a consultar
+     * @return Objeto Emisor con los datos, o null si hay error
+     */
+    public Emisor obtenerEstadoEmisor(String addressEmisor) {
+        try {
+            Function function = new Function(
+                    "obtenerEstadoEmisor",
+                    Arrays.asList(new Address(addressEmisor)),  // address
+                    Arrays.asList(
+                            new TypeReference<Bytes32>() {},      // hashActual
+                            new TypeReference<Bool>() {},         // registrado
+                            new TypeReference<Uint256>() {},      // timestampUltimoPago
+                            new TypeReference<Bytes32>() {}       // deviceId
+                    )
+            );
+
+            // 2. Encodear la función
+            String encodedFunction = FunctionEncoder.encode(function);
+
+            // 3. Crear transacción de lectura
+            Transaction transaction = Transaction.createEthCallTransaction(
+                    null,                           // from (no necesario para view)
+                    Constants.CONTRACT_ADDRESS,     // to (nuestro contrato)
+                    encodedFunction                 // data
+            );
+
+            // 4. Hacer la llamada
+            EthCall response = web3j.ethCall(
+                    transaction,
+                    DefaultBlockParameterName.LATEST  // Usar el bloque más reciente
+            ).send();
+
+            // 5. Verificar errores
+            if (response.hasError()) {
+                Log.e(TAG, "Error en ethCall: " + response.getError().getMessage());
+                return null;
+            }
+
+            // 6. Decodear la respuesta
+            List<Type> results = FunctionReturnDecoder.decode(
+                    response.getValue(),
+                    function.getOutputParameters()
+            );
+
+            // 7. Extraer valores
+            byte[] hashActual = (byte[]) results.get(0).getValue();
+            boolean registrado = (boolean) results.get(1).getValue();
+            BigInteger timestampUltimoPago = (BigInteger) results.get(2).getValue();
+            byte[] deviceId = (byte[]) results.get(3).getValue();
+
+            // 8. Crear objeto Emisor
+            Emisor emisor = new Emisor();
+            emisor.setWalletAddress(addressEmisor);
+            emisor.setHashActual(hashActual);
+            emisor.setRegistrado(registrado);
+            emisor.setTimestampUltimoPago(timestampUltimoPago.longValue());
+            emisor.setDeviceId(deviceId);
+
+            Log.d(TAG, "Estado del emisor obtenido: registrado=" + registrado);
+
+            return emisor;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error al obtener estado del emisor", e);
+            return null;
+        }
+    }
+
 }
+

@@ -117,6 +117,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"/>
 
+    <Button
+        android:id="@+id/btnTestEstadoEmisor"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Consultar Estado Emisor"
+        android:textSize="18sp"
+        android:paddingVertical="16dp"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        app:layout_constraintTop_toBottomOf="@id/btnTestWeb3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
     <!-- Estado de conexión -->
     <TextView
         android:id="@+id/tvEstadoConexion"
