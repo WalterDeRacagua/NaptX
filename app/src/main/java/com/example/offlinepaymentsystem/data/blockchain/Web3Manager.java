@@ -165,8 +165,8 @@ public class Web3Manager {
 
             // 6. Decodear la respuesta
             List<Type> results = FunctionReturnDecoder.decode(
-                    response.getValue(),
-                    function.getOutputParameters()
+                    response.getValue(),                //Respuesta en hexadecimal del SC
+                    function.getOutputParameters()      //Tipos esperados de lo que devuelve
             );
 
             // 7. Extraer valores

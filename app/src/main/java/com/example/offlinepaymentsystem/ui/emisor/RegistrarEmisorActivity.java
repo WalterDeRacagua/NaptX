@@ -200,30 +200,31 @@ public class RegistrarEmisorActivity extends AppCompatActivity {
     }
 
     private void verificarSiYaRegistrado() {
-        tvEstado.setText("Verificando estado de la blockchain.");
+        tvEstado.setText("Verificando estado en blockchain...");
         btnRegistrar.setEnabled(false);
 
-        new Thread(()->{
+        new Thread(() -> {
             try {
                 Emisor emisor = web3Manager.obtenerEstadoEmisor(address);
-                runOnUiThread(()->{
-                    if (emisor.isRegistrado()){
-                        tvEstado.setText("Ya estás registrado en la blockchain.");
+
+                runOnUiThread(() -> {
+                    if (emisor != null && emisor.isRegistrado()) {
+                        tvEstado.setText("Ya estás registrado en la blockchain\n\nNo es necesario registrarte de nuevo.");
                         btnRegistrar.setEnabled(false);
-                        btnRegistrar.setText("Ya registrado");
-                    }else {
-                        tvEstado.setText("Registrar en Blockchain");
+                        btnRegistrar.setText("Ya Registrado");
+                    } else {
+                        tvEstado.setText("Registrar en la blockchain");
                         btnRegistrar.setEnabled(true);
                     }
                 });
+
             } catch (Exception e) {
-                Log.e(TAG, "Error al verficar estado", e);
-                runOnUiThread(()->{
+
+                runOnUiThread(() -> {
                     tvEstado.setText("No se pudo verificar el estado");
                     btnRegistrar.setEnabled(true);
                 });
             }
-
-        });
+        }).start();
     }
 }
