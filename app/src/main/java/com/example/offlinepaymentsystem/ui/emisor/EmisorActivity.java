@@ -1,0 +1,76 @@
+package com.example.offlinepaymentsystem.ui.emisor;
+
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.offlinepaymentsystem.R;
+
+public class EmisorActivity extends AppCompatActivity {
+
+    private static final String PREFS_NAME = "NaptxPrefs";
+    private static final String KEY_WALLET_ADDRESS = "wallet_address";
+
+    private TextView tvWelcome;
+    private TextView tvAddress;
+    private Button btnRegistrar;
+    private Button btnHacerPago;
+    private Button btnVerEstado;
+
+    private SharedPreferences prefs;
+    private String address;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_emisor);
+
+        // Inicializar vistas
+        tvWelcome = findViewById(R.id.tvWelcome);
+        tvAddress = findViewById(R.id.tvAddress);
+        btnRegistrar = findViewById(R.id.btnRegistrar);
+        btnHacerPago = findViewById(R.id.btnHacerPago);
+        btnVerEstado = findViewById(R.id.btnVerEstado);
+
+        // Obtener address
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        address = prefs.getString(KEY_WALLET_ADDRESS, null);
+
+        if (address == null) {
+            tvWelcome.setText("No tienes wallet creada");
+            tvAddress.setText("Crea una wallet primero desde el menú principal");
+            btnRegistrar.setEnabled(false);
+            btnHacerPago.setEnabled(false);
+            btnVerEstado.setEnabled(false);
+        } else {
+            tvWelcome.setText("Bienvenido, Emisor");
+            tvAddress.setText("Tu address:\n" + address);
+        }
+
+        // Botones
+        btnRegistrar.setOnClickListener(v -> onRegistrarClicked());
+        btnHacerPago.setOnClickListener(v -> onHacerPagoClicked());
+        btnVerEstado.setOnClickListener(v -> onVerEstadoClicked());
+    }
+
+    private void onRegistrarClicked() {
+        Intent intent = new Intent(this, RegistrarEmisorActivity.class);
+        startActivity(intent);
+    }
+
+    private void onHacerPagoClicked() {
+        Toast.makeText(this, "Función en desarrollo", Toast.LENGTH_SHORT).show();
+        // TODO: Implementar PrepararPagoActivity
+    }
+
+    private void onVerEstadoClicked() {
+        Toast.makeText(this, "Función en desarrollo", Toast.LENGTH_SHORT).show();
+        // TODO: Mostrar estado del emisor
+    }
+}

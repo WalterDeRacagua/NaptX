@@ -39,23 +39,11 @@
             android:textAlignment="center"
             android:layout_marginBottom="32dp"
             android:minHeight="80dp"/>
-
-        <!-- Address (inicialmente oculta) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tu Address:"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"
-            android:id="@+id/tvLabelAddress"
-            android:visibility="gone"/>
-
         <TextView
             android:id="@+id/tvAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="0x..."
+            android:text=""
             android:textSize="14sp"
             android:fontFamily="monospace"
             android:padding="16dp"

@@ -4,10 +4,13 @@ import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.crypto.RawTransaction;
+import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -15,6 +18,7 @@ import com.example.offlinepaymentsystem.model.Emisor;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import android.content.Context;
@@ -23,7 +27,11 @@ import android.util.Log;
 import com.example.offlinepaymentsystem.utils.Constants;
 
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.methods.response.EthGasPrice;
+import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
+import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.utils.Numeric;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -185,5 +193,96 @@ public class Web3Manager {
         }
     }
 
+    /**
+     * Registra un emisor en el smart contract
+     * Envía transacción que modifica el estado (requiere gas)
+     */
+    public String registrarEmisor(
+            org.web3j.crypto.Credentials credentials,
+            byte[] deviceId,
+            long timestamp,
+            long nonce,
+            byte[] firma
+    ) {
+        try {
+            Log.d(TAG, "=== INICIANDO REGISTRO ===");
+            Log.d(TAG, "Address: " + credentials.getAddress());
+            Log.d(TAG, "DeviceId: " + Numeric.toHexString(deviceId));
+            Log.d(TAG, "Timestamp: " + timestamp);
+            Log.d(TAG, "Nonce: " + nonce);
+            Log.d(TAG, "Firma: " + Numeric.toHexString(firma));
+
+            // 1. Crear Function para registrar
+            Function function = new Function(
+                    "registrar",
+                    Arrays.asList(
+                            new Bytes32(deviceId),
+                            new Uint256(timestamp),
+                            new Uint256(nonce),
+                            new DynamicBytes(firma)
+                    ),
+                    Collections.emptyList()
+            );
+
+            // 2. Encodear función
+            String encodedFunction = FunctionEncoder.encode(function);
+
+            Log.d(TAG, "Función encodeada: " + encodedFunction);
+
+            // 3. Obtener nonce de la cuenta (número de transacciones)
+            EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
+                    credentials.getAddress(),
+                    DefaultBlockParameterName.LATEST
+            ).send();
+
+            BigInteger nonceTransaccion = ethGetTransactionCount.getTransactionCount();
+
+            Log.d(TAG, "Nonce de transacción: " + nonceTransaccion);
+
+            // 4. Obtener gas price
+            EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+            BigInteger gasPrice = ethGasPrice.getGasPrice();
+
+            Log.d(TAG, "Gas price: " + gasPrice);
+
+            // 5. Estimar gas limit
+            BigInteger gasLimit = BigInteger.valueOf(300000); // Estimación conservadora
+
+            // 6. Crear RawTransaction
+            RawTransaction rawTransaction = RawTransaction.createTransaction(
+                    nonceTransaccion,
+                    gasPrice,
+                    gasLimit,
+                    Constants.CONTRACT_ADDRESS,
+                    encodedFunction
+            );
+
+            // 7. Firmar transacción con credentials
+            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials);
+            String hexValue = Numeric.toHexString(signedMessage);
+
+            Log.d(TAG, "Transacción firmada: " + hexValue);
+
+            // 8. Enviar transacción
+            EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
+
+            if (ethSendTransaction.hasError()) {
+                String error = ethSendTransaction.getError().getMessage();
+                Log.e(TAG, "Error al enviar transacción: " + error);
+                return null;
+            }
+
+            String transactionHash = ethSendTransaction.getTransactionHash();
+
+            Log.d(TAG, "Transacción enviada");
+            Log.d(TAG, "Transaction Hash: " + transactionHash);
+
+            return transactionHash;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error al registrar emisor", e);
+            return null;
+        }
+    }
 }
 

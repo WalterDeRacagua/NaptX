@@ -8,6 +8,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -28,9 +29,10 @@
         </activity>
         <activity android:name=".ui.test.TestConnectionActivity" android:exported="false"/>
         <activity android:name=".ui.test.TestEstadoEmisorActivity" android:exported="false" />
-        <activity android:name=".ui.test.TestKeystoreActivity" android:exported="false" />
         <activity android:name=".ui.wallet.CrearWalletActivity" android:exported="false" />
-
+        <activity android:name=".ui.emisor.EmisorActivity" android:exported="false" />
+        <activity android:name=".ui.emisor.RegistrarEmisorActivity" android:exported="false"
+            tools:targetApi="28" />
     </application>
 
 </manifest>

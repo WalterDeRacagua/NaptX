@@ -1,16 +1,19 @@
 package com.example.offlinepaymentsystem.ui.wallet;
 
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.offlinepaymentsystem.R;
-import com.example.offlinepaymentsystem.data.local.KeystoreManager;
+import com.example.offlinepaymentsystem.data.local.CrearWalletCallback;
+import com.example.offlinepaymentsystem.data.local.WalletManager;
 
 public class CrearWalletActivity extends AppCompatActivity {
 
@@ -20,7 +23,7 @@ public class CrearWalletActivity extends AppCompatActivity {
     private static final String KEY_HAS_WALLET = "has_wallet";
     private static final String ALIAS_WALLET = "naptx_wallet_key";
 
-    private KeystoreManager keystoreManager;
+    private WalletManager walletManager;
     private SharedPreferences prefs;
 
     private TextView tvEstado;
@@ -28,6 +31,7 @@ public class CrearWalletActivity extends AppCompatActivity {
     private Button btnCrearWallet;
     private Button btnContinuar;
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,14 +46,8 @@ public class CrearWalletActivity extends AppCompatActivity {
         // Inicializar SharedPreferences
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
-        // Inicializar KeystoreManager
-        try {
-            keystoreManager = new KeystoreManager(this);
-        } catch (Exception e) {
-            tvEstado.setText("Error al inicializar KeystoreManager");
-            Log.e(TAG, "Error", e);
-            return;
-        }
+        // Inicializar WalletManager
+            walletManager = new WalletManager(this);
 
         // Verificar si ya existe wallet
         verificarWalletExistente();
@@ -63,10 +61,10 @@ public class CrearWalletActivity extends AppCompatActivity {
     }
 
     private void verificarWalletExistente() {
-        boolean tieneWallet = prefs.getBoolean(KEY_HAS_WALLET, false);
+        boolean existeWallet = walletManager.existeWallet();
         String addressGuardada = prefs.getString(KEY_WALLET_ADDRESS, null);
 
-        if (tieneWallet && addressGuardada != null) {
+        if (existeWallet && addressGuardada != null) {
             // Ya tiene wallet
             mostrarWalletExistente(addressGuardada);
         } else {
@@ -98,49 +96,43 @@ public class CrearWalletActivity extends AppCompatActivity {
         btnContinuar.setEnabled(false);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     private void crearWallet() {
-        tvEstado.setText("Creando wallet...\nSe pedirá tu huella dactilar.");
+        tvEstado.setText("Creando wallet...\nSe pedirá tu huella.");
         btnCrearWallet.setEnabled(false);
 
-        try {
-            // 1. Generar claves
-            keystoreManager.generarClaves(ALIAS_WALLET);
+        walletManager.crearWallet(new CrearWalletCallback() {
+            @Override
+            public void onWalletCreada(String address) {
+                runOnUiThread(()->{
+                    tvEstado.setText("Wallet creada exitosamente");
+                    tvAddress.setText(address);
+                    tvAddress.setVisibility(TextView.VISIBLE);
 
-            tvEstado.append("\n✓ Claves generadas");
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putBoolean(KEY_HAS_WALLET, true);
+                    editor.putString(KEY_WALLET_ADDRESS, address);
+                    editor.apply();
 
-            // 2. Obtener address
-            String address = keystoreManager.obtenerAddress(ALIAS_WALLET);
+                    btnContinuar.setEnabled(true);
+                    btnCrearWallet.setText("Creada exitosamente");
 
-            tvEstado.append("\n✓ Address obtenida");
-            tvEstado.append("\n\n¡Wallet creada exitosamente!");
+                    Log.d(TAG, "Wallet creada: " + address);
+                    Toast.makeText(CrearWalletActivity.this, "¡Wallet creada!", Toast.LENGTH_LONG).show();
+                });
+            }
 
-            // 3. Mostrar address
-            tvAddress.setText(address);
-            tvAddress.setVisibility(TextView.VISIBLE);
+            @Override
+            public void onError(String mensaje) {
+                runOnUiThread(() -> {
+                    tvEstado.setText("Error al crear wallet:\n" + mensaje);
+                    btnCrearWallet.setEnabled(true);
+                    btnCrearWallet.setText("Reintentar");
 
-            // 4. Guardar en SharedPreferences
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putBoolean(KEY_HAS_WALLET, true);
-            editor.putString(KEY_WALLET_ADDRESS, address);
-            editor.apply();
-
-            tvEstado.append("\n✓ Wallet guardada");
-
-            // 5. Habilitar continuar
-            btnContinuar.setEnabled(true);
-
-            // 6. Cambiar botón crear
-            btnCrearWallet.setText("✓ Wallet creada");
-
-            Log.d(TAG, "Wallet creada: " + address);
-            Toast.makeText(this, "¡Wallet creada!", Toast.LENGTH_LONG).show();
-
-        } catch (Exception e) {
-            tvEstado.setText("Error al crear wallet: " + e.getMessage());
-            btnCrearWallet.setEnabled(true);
-            btnCrearWallet.setText("🔐 Reintentar");
-            Log.e(TAG, "Error al crear wallet", e);
-            Toast.makeText(this, "Error al crear wallet", Toast.LENGTH_SHORT).show();
-        }
+                    Log.e(TAG, "Error: " + mensaje);
+                    Toast.makeText(CrearWalletActivity.this, "Error: " + mensaje, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 }

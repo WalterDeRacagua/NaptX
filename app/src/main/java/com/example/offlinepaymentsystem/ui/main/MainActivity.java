@@ -11,20 +11,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.offlinepaymentsystem.R;
+import com.example.offlinepaymentsystem.model.Emisor;
+import com.example.offlinepaymentsystem.ui.emisor.EmisorActivity;
 import com.example.offlinepaymentsystem.ui.test.TestConnectionActivity;
 import com.example.offlinepaymentsystem.ui.test.TestEstadoEmisorActivity;
-import com.example.offlinepaymentsystem.ui.test.TestKeystoreActivity;
 import com.example.offlinepaymentsystem.ui.wallet.CrearWalletActivity;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button btnPagador;
     private Button btnReceptor;
-    private Button btnWallets;
     private Button btnSincronizar;
     private Button btnTestWeb3;
     private Button btnTestEstadoEmisor;
-    private Button btnTestKeyStore;
     private Button btnCrearWallet;
     private TextView tvEstadoConexion;
 
@@ -36,11 +35,9 @@ public class MainActivity extends AppCompatActivity {
         //Inicializar las vistas
         btnPagador = findViewById(R.id.btnPagador);
         btnReceptor = findViewById(R.id.btnReceptor);
-        btnWallets = findViewById(R.id.btnWallets);
         btnSincronizar = findViewById(R.id.btnSincronizar);
         btnTestWeb3 = findViewById(R.id.btnTestWeb3);
         btnTestEstadoEmisor = findViewById(R.id.btnTestEstadoEmisor);
-        btnTestKeyStore = findViewById(R.id.btnTestKeystore);
         btnCrearWallet = findViewById(R.id.btnCrearWallet);
         tvEstadoConexion = findViewById(R.id.tvEstadoConexion);
 
@@ -56,12 +53,7 @@ public class MainActivity extends AppCompatActivity {
                 onReceiverClicked();
             }
         });
-        this.btnWallets.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                onWalletsClicked();
-            }
-        });
+
         this.btnSincronizar.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
@@ -79,10 +71,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v){onTestEstadoEmisorClicked();}
         });
 
-        this.btnTestKeyStore.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){onTestKeystoreClicked();}
-        });
+
 
         this.btnCrearWallet.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -91,17 +80,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onPayerClicked() {
-        //Toast para que aparezca un pequeño mensaje emergente en la pantalla
-        Toast.makeText(this, "Modo pagador", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, EmisorActivity.class);
+        startActivity(intent);
     }
     private void onReceiverClicked() {
         //Toast para que aparezca un pequeño mensaje emergente en la pantalla
         Toast.makeText(this, "Modo receptor", Toast.LENGTH_SHORT).show();
-    }
-
-    private void onWalletsClicked() {
-        //Toast para que aparezca un pequeño mensaje emergente en la pantalla
-        Toast.makeText(this, "Ver mis wallets", Toast.LENGTH_SHORT).show();
     }
 
     private void onSyncronizeClicked(){
@@ -127,10 +111,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void onTestEstadoEmisorClicked(){
         Intent intent = new Intent(this, TestEstadoEmisorActivity.class);
-        startActivity(intent);
-    }
-    private void onTestKeystoreClicked(){
-        Intent intent = new Intent(this, TestKeystoreActivity.class);
         startActivity(intent);
     }
 

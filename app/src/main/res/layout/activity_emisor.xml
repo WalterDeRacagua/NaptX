@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo/Ícono -->
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/logo_koala"
+            android:contentDescription="@string/logo_de_la_aplicaci_n"
+            android:layout_margin="24dp"/>
+
+
+        <TextView
+            android:id="@+id/tvWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Emisor"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tu address:\n0x..."
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:padding="12dp"
+            android:background="#F5F5F5"
+            android:textAlignment="center"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Botón Registrar -->
+        <Button
+            android:id="@+id/btnRegistrar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Registrar en Blockchain"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Botón Hacer Pago -->
+        <Button
+            android:id="@+id/btnHacerPago"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hacer Pago Offline"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Botón Ver Estado -->
+        <Button
+            android:id="@+id/btnVerEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ver mi Estado"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_marginBottom="16dp"/>
+    </LinearLayout>
+</ScrollView>
