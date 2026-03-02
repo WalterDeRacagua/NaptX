@@ -1,55 +1,89 @@
 package com.example.offlinepaymentsystem.model;
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+
+import com.example.offlinepaymentsystem.data.local.Converters;
+
 /***
- *Representa un pago en Proceso (sistema de 2 fases que hablamos con Jesús.
+ *Representa un pago en Proceso (sistema de 2 fases que hablamos con Jesús)
+ *
+ * FASE 1: (PREPARADO): Emisor crea un PagoOffline y genera un QR
+ * FASE 2: (CONFIRMADO): Emisor confirma pago en blockchain
  */
+@Entity(tableName = "pagos_pendientes")
+@TypeConverters(Converters.class)
 public class PagoPendiente {
 
     /**
-     * PREPARADO: Fase 1: fondos reservados
-     * CONFIRMADO: Fase 2: pago completado
+     * Estados del pago:
+     * PREPARADO: Fase 1: pago creado offline, QR generado
+     * CONFIRMADO: Fase 2: Pago confirmado en blockchain
      * REVERTIDO: Timeout: pago cancelado
      * FALLIDO: Error en el procesamiento
      */
+
     public enum Estado {PREPARADO, CONFIRMADO, REVERTIDO, FALLIDO};
-    private String idPago;
+
+    // =================== CAMPOS DE LA BASE DATOS ===================
+
+    @PrimaryKey
+    @NonNull
+    private String pagoId;
+
     private String emisor;
     private String receptor;
-    private double amount;
-    //Hash usado para generar el pago
-    private String hashUsado;
-    //Hash preparado temporal de la fase 1 del pago
-    private String hashPreparado;
-    //Hash final, una vez se ha confirmado el pago
-    private String hashFinal;
+    private long amount;
+
+    private byte[] hashUsado;
+    private byte[] hashPreparado;
+    private byte[] hashFinal;
+
     private long timestampPreparacion;
     private long timestampConfirmacion;
     private Estado estado;
-    private String transaccionId;//Id de la transacción si se proceso.
+    private byte[] txId;
+    private byte[] deviceId;
+    private byte[] firma;
 
+    // =================== CONSTRUCTOR VACÍO EN ROOM ===================
+
+    //Room necesita un constructor vacío.
     public PagoPendiente(){
         this.estado = Estado.PREPARADO;
     }
 
-    public PagoPendiente(String idPago, String emisor, String receptor, double amount, String
-            hashUsado, String hashPreparado){
-        this.idPago = idPago;
-        this.emisor= emisor;
-        this.receptor = receptor;
+    public PagoPendiente(@NonNull String pagoId, String emisor, String receptor, long amount, byte[] hashUsado,
+                         byte[] hashPreparado, byte[] deviceId, byte[] firma){
+        this.pagoId = pagoId;
+        this.emisor = emisor;
+        this.receptor=receptor;
         this.amount = amount;
         this.hashUsado = hashUsado;
         this.hashPreparado = hashPreparado;
-        this.timestampPreparacion = System.currentTimeMillis();
+        this.deviceId = deviceId;
+        this.firma = firma;
+        this.timestampPreparacion= System.currentTimeMillis()/1000;
         this.estado = Estado.PREPARADO;
+        this.hashFinal =null;
+        this.timestampConfirmacion=0; //Aun no lo hemos podido confirmar
+        this.txId = null; //Aun no se ha creado la transacción
     }
 
 
-    public String getIdPago() {
-        return idPago;
+
+    // =================== GETTERS Y SETTERS ===================
+
+
+    @NonNull
+    public String getPagoId() {
+        return pagoId;
     }
 
-    public void setIdPago(String idPago) {
-        this.idPago = idPago;
+    public void setPagoId(@NonNull String pagoId) {
+        this.pagoId = pagoId;
     }
 
     public String getEmisor() {
@@ -68,35 +102,35 @@ public class PagoPendiente {
         this.receptor = receptor;
     }
 
-    public double getAmount() {
+    public long getAmount() {
         return amount;
     }
 
-    public void setAmount(double amount) {
+    public void setAmount(long amount) {
         this.amount = amount;
     }
 
-    public String getHashUsado() {
+    public byte[] getHashUsado() {
         return hashUsado;
     }
 
-    public void setHashUsado(String hashUsado) {
+    public void setHashUsado(byte[] hashUsado) {
         this.hashUsado = hashUsado;
     }
 
-    public String getHashPreparado() {
+    public byte[] getHashPreparado() {
         return hashPreparado;
     }
 
-    public void setHashPreparado(String hashPreparado) {
+    public void setHashPreparado(byte[] hashPreparado) {
         this.hashPreparado = hashPreparado;
     }
 
-    public String getHashFinal() {
+    public byte[] getHashFinal() {
         return hashFinal;
     }
 
-    public void setHashFinal(String hashFinal) {
+    public void setHashFinal(byte[] hashFinal) {
         this.hashFinal = hashFinal;
     }
 
@@ -124,13 +158,27 @@ public class PagoPendiente {
         this.estado = estado;
     }
 
-    public String getTransaccionId() {
-        return transaccionId;
+    public byte[] getTxId() {
+        return txId;
     }
 
-    public void setTransaccionId(String transaccionId) {
-        this.transaccionId = transaccionId;
+    public void setTxId(byte[] txId) {
+        this.txId = txId;
     }
 
+    public byte[] getDeviceId() {
+        return deviceId;
+    }
 
+    public void setDeviceId(byte[] deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public byte[] getFirma() {
+        return firma;
+    }
+
+    public void setFirma(byte[] firma) {
+        this.firma = firma;
+    }
 }

@@ -12,15 +12,18 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 
+import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.security.KeyStore;
 import java.security.Security;
+import java.util.Arrays;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -546,6 +549,141 @@ public class WalletManager {
         firma[64] = signatureData.getV()[0];
 
         return firma;
+    }
+
+    /**
+     * Firma un pago para la fase de preapración
+     * Mensaje: keccak256(hashUsado, amount, receptor, timestamp, nonce, deviceId)
+     * Requiere biometría para descifrar la clave privada
+     * */
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    public void firmarPago( byte[] hashUsado, long amount, String receptor, long timestamp, long nonce, byte[] deviceId, FirmarMensajeCallback callback){
+        try {
+
+            //1. Verificamos que exista una wallet (lo que siempre verificamos)
+            if (!existeWallet()){
+                callback.onError("No existe wallet");
+                return;
+            }
+
+            //2. Construimos el mensaje del pago
+            byte[] mensaje = construirMensajePago(hashUsado, amount, receptor, timestamp, nonce, deviceId);
+
+            //3. Leemos los ficheros encriptados para extraer clave privada
+            byte[] encryptedKey = leerDeFichero(WALLET_FILE);
+            byte[] iv = leerDeFichero(IV_FILE);
+
+            //4. Obtenemos la clave AES del Keystore necesaria para desencriptar
+            SecretKey secretKey = (SecretKey) keyStore.getKey(AES_KEY_ALIAS, null);
+
+            //5. Configuramos el cipher para descifrar
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+
+            //6. Crear cryptoObject
+            BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(cipher);
+
+            //7. Configuramos el biometrix prompt
+            BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Firmar Pago").setSubtitle("Confirma tu identidad para firmar el pago")
+                    .setNegativeButtonText("Cancelar").build();
+
+            //8. Creamos el biometric prompt con callbacks
+
+            BiometricPrompt biometricPrompt = new BiometricPrompt((FragmentActivity) context,
+                    new BiometricPrompt.AuthenticationCallback() {
+
+                        @Override
+                        public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result)
+                        {
+                            super.onAuthenticationSucceeded(result);
+
+                            try {
+                                Cipher authenticatedCipher = result.getCryptoObject().getCipher();
+                                byte[] decriptedKey = authenticatedCipher.doFinal(encryptedKey);
+                                String privateKeyHex = new String(decriptedKey);
+
+                                Credentials credentials = Credentials.create(privateKeyHex);
+
+                                Sign.SignatureData signatureData = Sign.signMessage(mensaje, credentials.getEcKeyPair(), false);
+
+                                byte[] firma = convertirFirmaEthereum(signatureData);
+
+                                callback.onMensajeFirmado(firma);
+
+                                Arrays.fill(decriptedKey, (byte) 0);
+                            } catch (Exception e) {
+                                callback.onError("Error al firmar: " + e.getMessage());
+                            }
+                        }
+
+                        @Override
+                        public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                            super.onAuthenticationError(errorCode, errString);
+                            callback.onError("Error de autenticación " + errString);
+                        }
+
+                        @Override
+                        public void onAuthenticationFailed() {
+                            super.onAuthenticationFailed();
+                            callback.onError("Autenticación fallida");
+                        }
+
+                    });
+
+
+            biometricPrompt.authenticate(promptInfo, cryptoObject);
+
+        } catch (Exception e) {
+            callback.onError("Error: " + e.getMessage());
+        }
+    }
+
+    private byte[] construirMensajePago(byte[] hashUsado, long amount, String receptor, long timestamp, long nonce, byte[] deviceId ){
+        //Transformo el address 0x.... a bytes sin el 0x
+        byte[] receptorBytes = Numeric.hexStringToByteArray(receptor);
+
+        //Convertimos amount a bytes32
+        byte[] amountBytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            amountBytes[31-i] = (byte) (amount >> (i*8));
+        }
+
+        // Convertimos timestamp a bytes32
+        byte[] timestampBytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            timestampBytes[31 - i] = (byte) (timestamp >> (i * 8));
+        }
+
+        // Convertimos nonce a bytes32
+        byte[] nonceBytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            nonceBytes[31 - i] = (byte) (nonce >> (i * 8));
+        }
+
+        byte[] mensaje = new byte[hashUsado.length + amountBytes.length + receptorBytes.length +
+                timestampBytes.length + nonceBytes.length + deviceId.length];
+
+        int offset = 0;
+        System.arraycopy(hashUsado, 0, mensaje, offset, hashUsado.length);
+        offset += hashUsado.length;
+
+        System.arraycopy(amountBytes, 0, mensaje, offset, amountBytes.length);
+        offset += amountBytes.length;
+
+        System.arraycopy(receptorBytes, 0, mensaje, offset, receptorBytes.length);
+        offset += receptorBytes.length;
+
+        System.arraycopy(timestampBytes, 0, mensaje, offset, timestampBytes.length);
+        offset += timestampBytes.length;
+
+        System.arraycopy(nonceBytes, 0, mensaje, offset, nonceBytes.length);
+        offset += nonceBytes.length;
+
+        System.arraycopy(deviceId, 0, mensaje, offset, deviceId.length);
+
+        return Hash.sha3(mensaje);
     }
 }
 
