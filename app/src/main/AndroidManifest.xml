@@ -33,6 +33,13 @@
         <activity android:name=".ui.emisor.EmisorActivity" android:exported="false" />
         <activity android:name=".ui.emisor.RegistrarEmisorActivity" android:exported="false"
             tools:targetApi="28" />
+        <activity
+            android:name=".ui.emisor.GestionarWhitelistActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.emisor.GenerarPagoActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

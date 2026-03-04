@@ -1,34 +1,41 @@
 package com.example.offlinepaymentsystem.model;
 
 import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
 /***
- * Representa al receptor desde el punto de vista del emisor. Solo tiene datos.
+ * Representa un receptor en la whitelist del emisor
+ * Cada entrada define cuánto puede gastar este emisor con este receptor
  */
+@Entity(tableName = "whitelist")
 public class WhitelistItem {
+    @PrimaryKey
+    @NonNull
     private String direccion;
+
     private String nombre;
-    private double limite;
-    private double limiteOriginal; //TODO:Para saber cuánto se ha gastado, quizás lo quitamos
+    private long limite;
     private long timestampAgregado;
+
 
     public WhitelistItem(){
     }
 
-    public WhitelistItem(String direccion, String nombre, double limite){
+    public WhitelistItem(String direccion, String nombre, long limite){
         this.direccion = direccion;
         this.nombre= nombre;
         this.limite = limite;
-        this.limiteOriginal = limite;
         this.timestampAgregado = System.currentTimeMillis();
     }
 
 
+    @NonNull
     public String getDireccion() {
         return direccion;
     }
 
-    public void setDireccion(String direccion) {
+    public void setDireccion(@NonNull String direccion) {
         this.direccion = direccion;
     }
 
@@ -40,13 +47,22 @@ public class WhitelistItem {
         this.nombre = nombre;
     }
 
-    public double getLimite() {
+    public long getLimite() {
         return limite;
     }
 
-    public void setLimite(double limite) {
+    public void setLimite(long limite) {
         this.limite = limite;
     }
+
+    public long getTimestampAgregado() {
+        return timestampAgregado;
+    }
+
+    public void setTimestampAgregado(long timestampAgregado) {
+        this.timestampAgregado = timestampAgregado;
+    }
+
 
     @NonNull
     @Override
@@ -55,7 +71,6 @@ public class WhitelistItem {
                 "direccion='" + direccion + '\'' +
                 ", nombre='" + nombre + '\'' +
                 ", limite=" + limite +
-                ", limiteOriginal=" + limiteOriginal +
                 ", timestampAgregado=" + timestampAgregado +
                 '}';
     }

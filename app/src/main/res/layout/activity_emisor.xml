@@ -20,7 +20,6 @@
             android:contentDescription="@string/logo_de_la_aplicaci_n"
             android:layout_margin="24dp"/>
 
-
         <TextView
             android:id="@+id/tvWelcome"
             android:layout_width="wrap_content"
@@ -48,6 +47,16 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Registrar en Blockchain"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Botón Gestionar Receptores (NUEVO) -->
+        <Button
+            android:id="@+id/btnGestionarWhitelist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Receptores"
             android:textSize="18sp"
             android:paddingVertical="16dp"
             android:layout_marginBottom="16dp"/>

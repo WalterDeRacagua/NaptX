@@ -10,17 +10,20 @@ import androidx.room.TypeConverters;
 
 import com.example.offlinepaymentsystem.data.local.Converters;
 import com.example.offlinepaymentsystem.data.local.PagoPendienteDao;
+import com.example.offlinepaymentsystem.data.local.WhitelistDao;
 import com.example.offlinepaymentsystem.model.PagoPendiente;
+import com.example.offlinepaymentsystem.model.WhitelistItem;
 
 @Database(
-        entities = {PagoPendiente.class},
-        version = 1,
+        entities = {PagoPendiente.class, WhitelistItem.class},
+        version = 2,
         exportSchema = false
 )
 @TypeConverters(Converters.class)
 public abstract class AppDatabase extends RoomDatabase {
     private static  AppDatabase instance;
     public abstract PagoPendienteDao pagoPendienteDao();
+    public abstract WhitelistDao whitelistDao();
 
     /**
      * Singleton
