@@ -12,18 +12,30 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.DynamicArray;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.utils.Numeric;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.math.BigInteger;
 import java.security.KeyStore;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -683,6 +695,140 @@ public class WalletManager {
 
         System.arraycopy(deviceId, 0, mensaje, offset, deviceId.length);
 
+        return Hash.sha3(mensaje);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    public void firmarConfiguracionWhitelist(
+            String[] receptores,
+            long[] limites,
+            long timestamp,
+            long nonce,
+            FirmarMensajeCallback callback
+    ){
+        try {
+            if (!existeWallet()){
+                callback.onError("No existe wallet, por lo tanto no puedes firmar");
+                return;
+            }
+
+            byte[] mensaje = construirMensajeWhitelist(receptores,limites,timestamp,nonce);
+
+            byte[] encryptedKey = leerDeFichero(WALLET_FILE);
+            byte[] iv = leerDeFichero(IV_FILE);
+
+            SecretKey secretKey = (SecretKey) keyStore.getKey(AES_KEY_ALIAS, null);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+
+            BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(cipher);
+
+            BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Sincronizar Whitelist").setSubtitle("Confirma tu identidad para sincronizar con la Blockchain")
+                    .setNegativeButtonText("Cancelar").build();
+
+            BiometricPrompt biometricPrompt = new BiometricPrompt(
+                    (FragmentActivity) context,
+                    new BiometricPrompt.AuthenticationCallback() {
+
+                        @Override
+                        public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                            super.onAuthenticationSucceeded(result);
+                            try {
+                                Cipher authenticatedCipher = result.getCryptoObject().getCipher();
+                                byte[] decryptedKey = authenticatedCipher.doFinal(encryptedKey);
+                                String privateKeyHex = new String(decryptedKey);
+
+                                Credentials credentials = Credentials.create(privateKeyHex);
+
+                                Sign.SignatureData signatureData = Sign.signMessage(mensaje,credentials.getEcKeyPair(), false);
+
+                                byte[] firma = convertirFirmaEthereum(signatureData);
+
+                                callback.onMensajeFirmado(firma);
+
+                                Arrays.fill(decryptedKey, (byte) 0);
+                            } catch (Exception e) {
+                                callback.onError("Error al firmar " + e.getMessage());
+                            }
+
+                        }
+
+                        @Override
+                        public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                            super.onAuthenticationError(errorCode, errString);
+                            callback.onError("Autenticación falllida " + errString);
+                        }
+
+
+                        @Override
+                        public void onAuthenticationFailed() {
+                            super.onAuthenticationFailed();
+                            callback.onError("Error al firmar");
+                        }
+                    }
+            );
+
+            biometricPrompt.authenticate(promptInfo, cryptoObject);
+        } catch (Exception e) {
+            callback.onError("Error " + e.getMessage());
+        }
+    }
+
+    private byte[] construirMensajeWhitelist(
+            String[] receptores,
+            long[] limites,
+            long timestamp,
+            long nonce
+    ) {
+        // Calcular tamaño total
+        // receptores: cada address = 20 bytes
+        // limites: cada uint256 = 32 bytes
+        // timestamp: 32 bytes
+        // nonce: 32 bytes
+
+        int totalReceptores = receptores.length * 20;
+        int totalLimites = limites.length * 32;
+        int totalSize = totalReceptores + totalLimites + 32 + 32;
+
+        byte[] mensaje = new byte[totalSize];
+        int offset = 0;
+
+        // 1. Concatenar receptores (addresses)
+        for (String receptor : receptores) {
+            byte[] receptorBytes = Numeric.hexStringToByteArray(receptor);
+            System.arraycopy(receptorBytes, 0, mensaje, offset, 20);
+            offset += 20;
+        }
+
+        // 2. Concatenar limites (uint256 cada uno)
+        for (long limite : limites) {
+            byte[] limiteBytes = new byte[32];
+            for (int i = 0; i < 8; i++) {
+                limiteBytes[31 - i] = (byte) (limite >> (i * 8));
+            }
+            System.arraycopy(limiteBytes, 0, mensaje, offset, 32);
+            offset += 32;
+        }
+
+        // 3. Concatenar timestamp
+        byte[] timestampBytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            timestampBytes[31 - i] = (byte) (timestamp >> (i * 8));
+        }
+        System.arraycopy(timestampBytes, 0, mensaje, offset, 32);
+        offset += 32;
+
+        // 4. Concatenar nonce
+        byte[] nonceBytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            nonceBytes[31 - i] = (byte) (nonce >> (i * 8));
+        }
+        System.arraycopy(nonceBytes, 0, mensaje, offset, 32);
+
+        // 5. Hash Keccak256
         return Hash.sha3(mensaje);
     }
 }

@@ -4,11 +4,13 @@ import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -17,6 +19,7 @@ import org.web3j.protocol.core.methods.response.EthCall;
 import com.example.offlinepaymentsystem.model.Emisor;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -283,6 +286,70 @@ public class Web3Manager {
             Log.e(TAG, "Error al registrar emisor", e);
             return null;
         }
+    }
+    public String configurarWhitelist(
+            Credentials credentials,
+            String[] receptores,
+            long[] limites,
+            long timestamp,
+            long nonce,
+            byte [] firma
+    ) throws Exception{
+        List<org.web3j.abi.datatypes.Address> receptoresList = new ArrayList<>();
+        for (String receptor: receptores) {
+            receptoresList.add(new Address(receptor));
+        }
+
+        List<Uint256> limitesList = new ArrayList<>();
+        for (long limite: limites) {
+            limitesList.add(new Uint256(BigInteger.valueOf(limite)));
+        }
+
+        Function function = new Function(
+                "configurarWhitelist",
+                Arrays.asList(
+                        new DynamicArray<>(Address.class, receptoresList),
+                        new DynamicArray<>(Uint256.class, limitesList),
+                        new Uint256(BigInteger.valueOf(timestamp)),
+                        new Uint256(BigInteger.valueOf(nonce)),
+                        new DynamicBytes(firma)
+                ), Collections.emptyList());
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send();
+
+        BigInteger txNonce = ethGetTransactionCount.getTransactionCount();
+
+        EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+        BigInteger gasPrice = ethGasPrice.getGasPrice();
+
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(500000), //Mayor limit para arrays
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+
+        byte [] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                11155111,
+                credentials
+        );
+
+        String hexValue = Numeric.toHexString(signedMessage);
+
+        EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
+
+        if (ethSendTransaction.hasError()) {
+            throw new Exception("Error: " + ethSendTransaction.getError().getMessage());
+        }
+
+        return ethSendTransaction.getTransactionHash();
     }
 }
 

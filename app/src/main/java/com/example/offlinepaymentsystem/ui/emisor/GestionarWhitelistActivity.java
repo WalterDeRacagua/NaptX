@@ -1,7 +1,10 @@
 package com.example.offlinepaymentsystem.ui.emisor;
 
 import android.app.Dialog;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -10,31 +13,45 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.offlinepaymentsystem.R;
+import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
+import com.example.offlinepaymentsystem.data.local.FirmarMensajeCallback;
+import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
+import com.example.offlinepaymentsystem.data.local.WalletManager;
 import com.example.offlinepaymentsystem.data.repository.RepositoryCallback;
 import com.example.offlinepaymentsystem.data.repository.WhitelistRepository;
 import com.example.offlinepaymentsystem.model.WhitelistItem;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GestionarWhitelistActivity extends AppCompatActivity {
 
     private static final String TAG = "GestionarWhitelist";
+    private static final String PREFS_NAME = "WalletPrefs";
+    private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
 
     //UI
     private ListView lvReceptores;
     private TextView tvVacio;
     private Button btnAnadirReceptor;
+    private Button btnSincronizarBlockchain;
 
     //Datos
     private WhitelistRepository repository;
     private WhitelistAdapter adapter;
     private List<WhitelistItem> receptores;
+
+    //Blockchain
+    private WalletManager walletManager;
+    private Web3Manager web3Manager;
+    private String addressEmisor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +68,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         lvReceptores = findViewById(R.id.lvReceptores);
         tvVacio = findViewById(R.id.tvVacio);
         btnAnadirReceptor = findViewById(R.id.btnAnadirReceptor);
+        btnSincronizarBlockchain = findViewById(R.id.btnSincronizarBlockchain);
     }
 
     private void initData(){
@@ -58,12 +76,19 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         this.receptores = new ArrayList<>();
         this.adapter = new WhitelistAdapter(this, receptores);
         this.lvReceptores.setAdapter(this.adapter);
+
+        this.walletManager = new WalletManager(this);
+        this.web3Manager = new Web3Manager(this);
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        this.addressEmisor = prefs.getString(KEY_WALLET_ADDRESS, null);
     }
 
     private void setupListeners(){
-        btnAnadirReceptor.setOnClickListener(v -> mostrarDialogoAnadir());
-        //TODO: Si algún día me da tiempo metemos el eliminar de la whitelist.
+        this.btnAnadirReceptor.setOnClickListener(v -> mostrarDialogoAnadir());
+        this.btnSincronizarBlockchain.setOnClickListener(v -> sincronizarConBlockchain());
     }
+
 
     private void cargarReceptores(){
         repository.obtenerTodos(new RepositoryCallback<List<WhitelistItem>>() {
@@ -77,9 +102,11 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
                     if (receptores.isEmpty()){
                         tvVacio.setVisibility(View.VISIBLE);
                         lvReceptores.setVisibility(View.GONE);
+                        btnSincronizarBlockchain.setEnabled(false);
                     }else {
                         tvVacio.setVisibility(View.GONE);
                         lvReceptores.setVisibility((View.VISIBLE));
+                        btnSincronizarBlockchain.setEnabled(true);
                     }
                 });
             }
@@ -176,4 +203,96 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         return true;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    private void sincronizarConBlockchain(){
+        if (receptores.isEmpty()){
+            Toast.makeText(this, "No hay receptores para sincronizar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] receptoresArray = new String[receptores.size()];
+        long[] limitesArray = new long[receptores.size()];
+
+        for (int i = 0; i < receptores.size(); i++) {
+            receptoresArray[i] = receptores.get(i).getDireccion();
+            limitesArray[i] = receptores.get(i).getLimite();
+        }
+
+        long timestamp = System.currentTimeMillis()/1000;
+        long nonce = generarNonce();
+
+        btnSincronizarBlockchain.setEnabled(false);
+
+        walletManager.firmarConfiguracionWhitelist(receptoresArray, limitesArray, timestamp, nonce,
+                new FirmarMensajeCallback() {
+                    @Override
+                    public void onMensajeFirmado(byte[] firma) {
+                        runOnUiThread(()->{
+                            new Handler().postDelayed(() -> {
+                                obtenerCredentialsYEnviar(receptoresArray, limitesArray, timestamp, nonce, firma);
+                            }, 500);
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(()->{
+                            btnSincronizarBlockchain.setEnabled(true);
+                        });
+                    }
+                });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    private void obtenerCredentialsYEnviar(String[] receptores, long[] limites,
+                                           long timestamp, long nonce, byte[] firma) {
+
+        walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
+            @Override
+            public void onCredentialsObtenidos(org.web3j.crypto.Credentials credentials) {
+                new Thread(() -> {
+                    enviarTransaccion(credentials, receptores, limites, timestamp, nonce, firma);
+                }).start();
+            }
+
+            @Override
+            public void onError(String mensaje) {
+                runOnUiThread(() -> {
+                    btnSincronizarBlockchain.setEnabled(true);
+                });
+            }
+        });
+    }
+
+    private void enviarTransaccion(org.web3j.crypto.Credentials credentials,
+                                   String[] receptores, long[] limites,
+                                   long timestamp, long nonce, byte[] firma) {
+        try {
+
+            String txHash = web3Manager.configurarWhitelist(
+                    credentials,
+                    receptores,
+                    limites,
+                    timestamp,
+                    nonce,
+                    firma
+            );
+
+            runOnUiThread(() -> {
+                Toast.makeText(this,
+                        "Whitelist sincronizada con blockchain",
+                        Toast.LENGTH_LONG).show();
+                btnSincronizarBlockchain.setEnabled(true);
+            });
+
+        } catch (Exception e) {
+            runOnUiThread(() -> {
+                btnSincronizarBlockchain.setEnabled(true);
+            });
+        }
+    }
+    private long generarNonce() {
+        SecureRandom random = new SecureRandom();
+        return Math.abs(random.nextLong());
+    }
 }
