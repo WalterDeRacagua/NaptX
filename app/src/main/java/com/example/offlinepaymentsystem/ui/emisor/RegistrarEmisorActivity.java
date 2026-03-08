@@ -28,8 +28,8 @@ import java.util.Random;
 public class RegistrarEmisorActivity extends AppCompatActivity {
 
     private static final String TAG = "RegistrarEmisor";
-    private static final String PREFS_NAME = "NaptxPrefs";
-    private static final String KEY_WALLET_ADDRESS = "wallet_address";
+    private static final String PREFS_NAME = "WalletPrefs";
+    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
 
     private WalletManager walletManager;
     private Web3Manager web3Manager;

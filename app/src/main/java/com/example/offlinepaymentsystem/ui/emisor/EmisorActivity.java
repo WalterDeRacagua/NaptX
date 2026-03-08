@@ -13,8 +13,8 @@ import com.example.offlinepaymentsystem.R;
 
 public class EmisorActivity extends AppCompatActivity {
 
-    private static final String PREFS_NAME = "NaptxPrefs";
-    private static final String KEY_WALLET_ADDRESS = "wallet_address";
+    private static final String PREFS_NAME = "WalletPrefs";
+    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
 
     private TextView tvWelcome;
     private TextView tvAddress;

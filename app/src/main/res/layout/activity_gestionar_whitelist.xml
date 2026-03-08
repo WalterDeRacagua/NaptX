@@ -52,6 +52,19 @@
 
     </LinearLayout>
 
+    <!-- TextView de progreso (NUEVO) -->
+    <TextView
+        android:id="@+id/tvInfoSync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="@color/text_hint"
+        android:gravity="center"
+        android:padding="8dp"
+        android:layout_marginHorizontal="16dp"
+        android:visibility="gone"/>
+
     <!-- Mensaje vacío -->
     <TextView
         android:id="@+id/tvVacio"

@@ -558,7 +558,11 @@ public class WalletManager {
         System.arraycopy(signatureData.getS(), 0, firma, 32, 32);
 
         // v (1 byte) - recovery id
-        firma[64] = signatureData.getV()[0];
+        byte v = signatureData.getV()[0];
+        if (v < 27) {
+            v += 27;  // Convertir 0/1 a 27/28
+        }
+        firma[64] = v;
 
         return firma;
     }
@@ -714,6 +718,17 @@ public class WalletManager {
 
             byte[] mensaje = construirMensajeWhitelist(receptores,limites,timestamp,nonce);
 
+            // === DEBUG LOGS ===
+            Log.d(TAG, "=== CONFIGURAR WHITELIST DEBUG ===");
+            Log.d(TAG, "Número de receptores: " + receptores.length);
+            for (int i = 0; i < receptores.length; i++) {
+                Log.d(TAG, "Receptor[" + i + "]: " + receptores[i]);
+                Log.d(TAG, "Límite[" + i + "]: " + limites[i] + " wei");
+            }
+            Log.d(TAG, "Timestamp: " + timestamp);
+            Log.d(TAG, "Nonce: " + nonce);
+            Log.d(TAG, "Mensaje construido (hex): " + Numeric.toHexString(mensaje));
+
             byte[] encryptedKey = leerDeFichero(WALLET_FILE);
             byte[] iv = leerDeFichero(IV_FILE);
 
@@ -746,6 +761,8 @@ public class WalletManager {
                                 Sign.SignatureData signatureData = Sign.signMessage(mensaje,credentials.getEcKeyPair(), false);
 
                                 byte[] firma = convertirFirmaEthereum(signatureData);
+                                Log.d(TAG, "Firma generada (hex): " + Numeric.toHexString(firma));
+                                Log.d(TAG, "Address del firmante: " + credentials.getAddress());
 
                                 callback.onMensajeFirmado(firma);
 
@@ -783,53 +800,92 @@ public class WalletManager {
             long timestamp,
             long nonce
     ) {
-        // Calcular tamaño total
-        // receptores: cada address = 20 bytes
-        // limites: cada uint256 = 32 bytes
-        // timestamp: 32 bytes
-        // nonce: 32 bytes
+        Log.d(TAG, ">>> construirMensajeWhitelist INICIO");
+        Log.d(TAG, ">>> Parámetros recibidos:");
+        Log.d(TAG, ">>> receptores.length = " + receptores.length);
+        for (int i = 0; i < receptores.length; i++) {
+            Log.d(TAG, ">>> receptores[" + i + "] = " + receptores[i]);
+        }
+        Log.d(TAG, ">>> limites.length = " + limites.length);
+        for (int i = 0; i < limites.length; i++) {
+            Log.d(TAG, ">>> limites[" + i + "] = " + limites[i]);
+        }
+        Log.d(TAG, ">>> timestamp = " + timestamp);
+        Log.d(TAG, ">>> nonce = " + nonce);
 
-        int totalReceptores = receptores.length * 20;
+        int totalReceptores = receptores.length * 32;
         int totalLimites = limites.length * 32;
         int totalSize = totalReceptores + totalLimites + 32 + 32;
+
+        Log.d(TAG, ">>> totalSize calculado = " + totalSize);
 
         byte[] mensaje = new byte[totalSize];
         int offset = 0;
 
         // 1. Concatenar receptores (addresses)
-        for (String receptor : receptores) {
+        Log.d(TAG, ">>> Copiando receptores...");
+        for (int i = 0; i < receptores.length; i++) {
+            String receptor = receptores[i];
+            Log.d(TAG, ">>> Procesando receptor[" + i + "] = " + receptor);
+
             byte[] receptorBytes = Numeric.hexStringToByteArray(receptor);
-            System.arraycopy(receptorBytes, 0, mensaje, offset, 20);
-            offset += 20;
+            Log.d(TAG, ">>> receptorBytes.length original = " + receptorBytes.length);
+
+            // PADEAR A 32 BYTES (añadir 12 bytes de ceros al inicio)
+            byte[] receptorPadded = new byte[32];
+            System.arraycopy(receptorBytes, 0, receptorPadded, 12, 20);  // Copiar a partir del byte 12
+
+            Log.d(TAG, ">>> receptorPadded (hex) = " + Numeric.toHexString(receptorPadded));
+
+            System.arraycopy(receptorPadded, 0, mensaje, offset, 32);  // Copiar 32 bytes
+            Log.d(TAG, ">>> Copiado a offset " + offset);
+            offset += 32;  // Avanzar 32 bytes
         }
 
         // 2. Concatenar limites (uint256 cada uno)
-        for (long limite : limites) {
+        Log.d(TAG, ">>> Copiando límites...");
+        for (int i = 0; i < limites.length; i++) {
+            long limite = limites[i];
+            Log.d(TAG, ">>> Procesando limite[" + i + "] = " + limite);
+
             byte[] limiteBytes = new byte[32];
-            for (int i = 0; i < 8; i++) {
-                limiteBytes[31 - i] = (byte) (limite >> (i * 8));
+            for (int j = 0; j < 8; j++) {
+                limiteBytes[31 - j] = (byte) (limite >> (j * 8));
             }
+            Log.d(TAG, ">>> limiteBytes (hex) = " + Numeric.toHexString(limiteBytes));
+
             System.arraycopy(limiteBytes, 0, mensaje, offset, 32);
+            Log.d(TAG, ">>> Copiado a offset " + offset);
             offset += 32;
         }
 
         // 3. Concatenar timestamp
+        Log.d(TAG, ">>> Copiando timestamp...");
         byte[] timestampBytes = new byte[32];
         for (int i = 0; i < 8; i++) {
             timestampBytes[31 - i] = (byte) (timestamp >> (i * 8));
         }
+        Log.d(TAG, ">>> timestampBytes (hex) = " + Numeric.toHexString(timestampBytes));
         System.arraycopy(timestampBytes, 0, mensaje, offset, 32);
         offset += 32;
 
         // 4. Concatenar nonce
+        Log.d(TAG, ">>> Copiando nonce...");
         byte[] nonceBytes = new byte[32];
         for (int i = 0; i < 8; i++) {
             nonceBytes[31 - i] = (byte) (nonce >> (i * 8));
         }
+        Log.d(TAG, ">>> nonceBytes (hex) = " + Numeric.toHexString(nonceBytes));
         System.arraycopy(nonceBytes, 0, mensaje, offset, 32);
 
+        Log.d(TAG, ">>> Mensaje COMPLETO antes del hash:");
+        Log.d(TAG, ">>> " + Numeric.toHexString(mensaje));
+
         // 5. Hash Keccak256
-        return Hash.sha3(mensaje);
+        byte[] hash = Hash.sha3(mensaje);
+        Log.d(TAG, ">>> Hash final: " + Numeric.toHexString(hash));
+
+        return hash;
     }
 }
 

@@ -32,6 +32,7 @@ import com.example.offlinepaymentsystem.utils.Constants;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
+import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
@@ -295,6 +296,18 @@ public class Web3Manager {
             long nonce,
             byte [] firma
     ) throws Exception{
+        // === DEBUG LOGS ===
+        Log.d(TAG, "=== ENVIAR CONFIGURAR WHITELIST ===");
+        Log.d(TAG, "Credentials address: " + credentials.getAddress());
+        Log.d(TAG, "Número de receptores: " + receptores.length);
+        for (int i = 0; i < receptores.length; i++) {
+            Log.d(TAG, "Receptor[" + i + "]: " + receptores[i]);
+            Log.d(TAG, "Límite[" + i + "]: " + limites[i]);
+        }
+        Log.d(TAG, "Timestamp: " + timestamp);
+        Log.d(TAG, "Nonce: " + nonce);
+        Log.d(TAG, "Firma (hex): " + Numeric.toHexString(firma));
+        Log.d(TAG, "Firma length: " + firma.length + " bytes");
         List<org.web3j.abi.datatypes.Address> receptoresList = new ArrayList<>();
         for (String receptor: receptores) {
             receptoresList.add(new Address(receptor));
@@ -350,6 +363,75 @@ public class Web3Manager {
         }
 
         return ethSendTransaction.getTransactionHash();
+    }
+
+    /**
+     * Aprueba tokens para que el contrato pueda gastarlos
+     */
+    public String aprobarTokens(
+            org.web3j.crypto.Credentials credentials,
+            long amount
+    ) throws Exception {
+
+        Log.d(TAG, ">>> aprobarTokens() iniciado");
+        Log.d(TAG, ">>> Amount a aprobar: " + amount);
+
+        // Función approve(address spender, uint256 amount)
+        Function function = new Function(
+                "approve",
+                Arrays.asList(
+                        new Address(Constants.CONTRACT_ADDRESS),  // spender = el contrato
+                        new Uint256(BigInteger.valueOf(amount))   // amount
+                ),
+                Collections.emptyList()
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+        Log.d(TAG, "Función encodeada: " + encodedFunction);
+
+        // Obtener nonce de transacción
+        EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send();
+        BigInteger txNonce = ethGetTransactionCount.getTransactionCount();
+
+        // Obtener gas price
+        EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+        BigInteger gasPrice = ethGasPrice.getGasPrice();
+
+        // Crear RawTransaction
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(100000),  // Gas limit para approve
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+
+        // Firmar transacción
+        byte[] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                11155111,  // Chain ID de Sepolia
+                credentials
+        );
+        String hexValue = Numeric.toHexString(signedMessage);
+
+        // Enviar transacción
+        EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
+
+        if (ethSendTransaction.hasError()) {
+            throw new Exception("Error: " + ethSendTransaction.getError().getMessage());
+        }
+
+        String transactionHash = ethSendTransaction.getTransactionHash();
+        Log.d(TAG, "Approve Transaction Hash: " + transactionHash);
+
+        return transactionHash;
+    }
+
+    public EthGetTransactionReceipt obtenerReceipt(String txHash) throws Exception {
+        return web3j.ethGetTransactionReceipt(txHash).send();
     }
 }
 

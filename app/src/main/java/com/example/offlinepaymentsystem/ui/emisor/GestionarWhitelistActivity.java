@@ -35,13 +35,14 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
 
     private static final String TAG = "GestionarWhitelist";
     private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
+    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
 
     //UI
     private ListView lvReceptores;
     private TextView tvVacio;
     private Button btnAnadirReceptor;
     private Button btnSincronizarBlockchain;
+    private TextView tvInfoSync;
 
     //Datos
     private WhitelistRepository repository;
@@ -53,6 +54,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
     private Web3Manager web3Manager;
     private String addressEmisor;
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +71,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         tvVacio = findViewById(R.id.tvVacio);
         btnAnadirReceptor = findViewById(R.id.btnAnadirReceptor);
         btnSincronizarBlockchain = findViewById(R.id.btnSincronizarBlockchain);
+        tvInfoSync = findViewById(R.id.tvInfoSync);
     }
 
     private void initData(){
@@ -84,6 +87,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         this.addressEmisor = prefs.getString(KEY_WALLET_ADDRESS, null);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     private void setupListeners(){
         this.btnAnadirReceptor.setOnClickListener(v -> mostrarDialogoAnadir());
         this.btnSincronizarBlockchain.setOnClickListener(v -> sincronizarConBlockchain());
@@ -222,12 +226,15 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         long nonce = generarNonce();
 
         btnSincronizarBlockchain.setEnabled(false);
+        tvInfoSync.setVisibility(View.VISIBLE);
+        tvInfoSync.setText("Firmando configuración...");
 
         walletManager.firmarConfiguracionWhitelist(receptoresArray, limitesArray, timestamp, nonce,
                 new FirmarMensajeCallback() {
                     @Override
                     public void onMensajeFirmado(byte[] firma) {
                         runOnUiThread(()->{
+                            tvInfoSync.setText("Firmado\n\n🔐 Obteniendo credenciales...");
                             new Handler().postDelayed(() -> {
                                 obtenerCredentialsYEnviar(receptoresArray, limitesArray, timestamp, nonce, firma);
                             }, 500);
@@ -237,6 +244,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
                     @Override
                     public void onError(String mensaje) {
                         runOnUiThread(()->{
+                            tvInfoSync.setText("Error: " + mensaje);
                             btnSincronizarBlockchain.setEnabled(true);
                         });
                     }
@@ -268,7 +276,36 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
                                    String[] receptores, long[] limites,
                                    long timestamp, long nonce, byte[] firma) {
         try {
+            runOnUiThread(() -> {
+                tvInfoSync.setText("Aprobando tokens...");
+            });
 
+            // PASO 1: Calcular suma total
+            long sumaTotal = 0;
+            for (long limite : limites) {
+                sumaTotal += limite;
+            }
+
+            // PASO 2: Aprobar tokens
+            String txHashApprove = web3Manager.aprobarTokens(credentials, sumaTotal);
+
+
+            runOnUiThread(() -> {
+                tvInfoSync.setText("Tokens aprobados\n Esperando confirmación...");
+            });
+
+            // PASO 3: ESPERAR CONFIRMACIÓN REAL (no solo delay)
+            boolean confirmada = esperarConfirmacion(txHashApprove, 60); // 60 segundos max
+
+            if (!confirmada) {
+                throw new Exception("Timeout: La transacción approve no se confirmó");
+            }
+
+            runOnUiThread(() -> {
+                tvInfoSync.setText("Approve confirmado\n\nConfigurando whitelist...");
+            });
+
+            // PASO 4: Configurar whitelist
             String txHash = web3Manager.configurarWhitelist(
                     credentials,
                     receptores,
@@ -279,6 +316,9 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
             );
 
             runOnUiThread(() -> {
+                tvInfoSync.setText("SINCRONIZADO\n\n" +
+                        "Approve TX:\n" + txHashApprove + "\n\n" +
+                        "Whitelist TX:\n" + txHash);
                 Toast.makeText(this,
                         "Whitelist sincronizada con blockchain",
                         Toast.LENGTH_LONG).show();
@@ -287,9 +327,42 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             runOnUiThread(() -> {
+                tvInfoSync.setText("Error: " + e.getMessage());
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 btnSincronizarBlockchain.setEnabled(true);
             });
         }
+    }
+
+    /**
+     * Espera a que una transacción se confirme
+     * @param txHash Hash de la transacción
+     * @param timeoutSeconds Tiempo máximo de espera
+     * @return true si se confirmó, false si timeout
+     */
+    private boolean esperarConfirmacion(String txHash, int timeoutSeconds) throws Exception {
+        int intentos = 0;
+        int maxIntentos = timeoutSeconds / 2;
+
+        while (intentos < maxIntentos) {
+            try {
+                org.web3j.protocol.core.methods.response.EthGetTransactionReceipt receipt =
+                        web3Manager.obtenerReceipt(txHash);
+
+                if (receipt.getTransactionReceipt().isPresent()) {
+                    return true;
+                }
+
+                Thread.sleep(2000);
+                intentos++;
+
+            } catch (Exception e) {
+                Thread.sleep(2000);
+                intentos++;
+            }
+        }
+
+        return false; // Timeout
     }
     private long generarNonce() {
         SecureRandom random = new SecureRandom();

@@ -18,8 +18,8 @@ import com.example.offlinepaymentsystem.data.local.WalletManager;
 public class CrearWalletActivity extends AppCompatActivity {
 
     private static final String TAG = "CrearWallet";
-    private static final String PREFS_NAME = "NaptxPrefs";
-    private static final String KEY_WALLET_ADDRESS = "wallet_address";
+    private static final String PREFS_NAME = "WalletPrefs";
+    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
     private static final String KEY_HAS_WALLET = "has_wallet";
     private static final String ALIAS_WALLET = "naptx_wallet_key";
 
