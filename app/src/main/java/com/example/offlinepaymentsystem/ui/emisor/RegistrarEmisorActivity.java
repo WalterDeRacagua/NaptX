@@ -169,32 +169,47 @@ public class RegistrarEmisorActivity extends AppCompatActivity {
         Log.d(TAG, ">>> [RegistrarEmisor] enviarTransaccion() INICIADO");
 
         try {
-            String txHash = web3Manager.registrarEmisor(credentials, deviceId, timestamp, nonce, firma);
+            // Devuelve [txHash, hashInicial]
+            String[] resultado = web3Manager.registrarEmisor(credentials, deviceId, timestamp, nonce, firma);
 
-            Log.d(TAG, ">>> [RegistrarEmisor] registrarEmisor() retornó: " + txHash);
+            if (resultado == null || resultado.length < 2) {
+                Log.e(TAG, ">>> [RegistrarEmisor] Resultado nulo o incompleto");
+                runOnUiThread(() -> {
+                    tvEstado.setText("Error: No se recibió respuesta del contrato");
+                    btnRegistrar.setEnabled(true);
+                    Toast.makeText(this, "Error al registrar", Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            String txHash = resultado[0];
+            String hashInicialHex = resultado[1];
+
+            Log.d(TAG, ">>> [RegistrarEmisor] registrarEmisor() retornó:");
+            Log.d(TAG, ">>> TX Hash: " + txHash);
+            Log.d(TAG, ">>> HashInicial: " + hashInicialHex);
 
             runOnUiThread(() -> {
-                if (txHash != null) {
-                    tvEstado.setText("¡REGISTRO EXITOSO!\n\n" +
-                            "Transaction Hash:\n" + txHash + "\n\n" +
-                            "Espera unos segundos para la confirmación.\n\n" +
-                            "Puedes ver la transacción en:\n" +
-                            "https://sepolia.etherscan.io/tx/" + txHash);
+                // Guardar hashActual en SharedPreferences
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("HASH_ACTUAL", hashInicialHex);
+                editor.apply();
 
-                    Log.d(TAG, "REGISTRO EXITOSO - TX: " + txHash);
-                    Toast.makeText(this, "¡Registro enviado a blockchain!", Toast.LENGTH_LONG).show();
-                } else {
-                    Log.e(TAG, ">>> [RegistrarEmisor] txHash es NULL");
-                    tvEstado.setText("Error al enviar transacción\n\nRevisa Logcat");
-                    btnRegistrar.setEnabled(true);
-                    Toast.makeText(this, "Error al enviar transacción", Toast.LENGTH_SHORT).show();
-                }
+                Log.d(TAG, "HashActual guardado en SharedPreferences");
+
+                tvEstado.setText("REGISTRO COMPLETO!\n\n" +
+                        "Transaction Hash:\n" + txHash.substring(0, 20) + "...\n\n" +
+                        "Hash Inicial:\n" + hashInicialHex.substring(0, 20) + "...\n\n");
+
+                Toast.makeText(this, "Registro exitoso y hash guardado!", Toast.LENGTH_LONG).show();
             });
+
         } catch (Exception e) {
             Log.e(TAG, ">>> [RegistrarEmisor] EXCEPCIÓN en enviarTransaccion()", e);
             runOnUiThread(() -> {
-                tvEstado.setText("Excepción:\n" + e.getMessage());
+                tvEstado.setText("Error:\n" + e.getMessage());
                 btnRegistrar.setEnabled(true);
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
     }
@@ -226,5 +241,9 @@ public class RegistrarEmisorActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    private void obtenerYGuardarHashInicial(){
+        this.tvEstado.setText("Registro exitoso \n\n Obteniendo hash inicial...");
     }
 }

@@ -234,7 +234,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
                     @Override
                     public void onMensajeFirmado(byte[] firma) {
                         runOnUiThread(()->{
-                            tvInfoSync.setText("Firmado\n\n🔐 Obteniendo credenciales...");
+                            tvInfoSync.setText("Firmado\n\n Obteniendo credenciales...");
                             new Handler().postDelayed(() -> {
                                 obtenerCredentialsYEnviar(receptoresArray, limitesArray, timestamp, nonce, firma);
                             }, 500);

@@ -11,6 +11,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.Hash;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -34,6 +35,7 @@ import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.utils.Numeric;
 
@@ -198,11 +200,11 @@ public class Web3Manager {
     }
 
     /**
-     * Registra un emisor en el smart contract
-     * Envía transacción que modifica el estado (requiere gas)
+     * Registra al emisor en el contrato
+     * @return Array: [txHash, hashInicial]
      */
-    public String registrarEmisor(
-            org.web3j.crypto.Credentials credentials,
+    public String[] registrarEmisor(
+            Credentials credentials,
             byte[] deviceId,
             long timestamp,
             long nonce,
@@ -230,27 +232,24 @@ public class Web3Manager {
 
             // 2. Encodear función
             String encodedFunction = FunctionEncoder.encode(function);
-
             Log.d(TAG, "Función encodeada: " + encodedFunction);
 
-            // 3. Obtener nonce de la cuenta (número de transacciones)
+            // 3. Obtener nonce de la cuenta
             EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
                     credentials.getAddress(),
                     DefaultBlockParameterName.LATEST
             ).send();
 
             BigInteger nonceTransaccion = ethGetTransactionCount.getTransactionCount();
-
             Log.d(TAG, "Nonce de transacción: " + nonceTransaccion);
 
             // 4. Obtener gas price
             EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
             BigInteger gasPrice = ethGasPrice.getGasPrice();
-
             Log.d(TAG, "Gas price: " + gasPrice);
 
             // 5. Estimar gas limit
-            BigInteger gasLimit = BigInteger.valueOf(300000); // Estimación conservadora
+            BigInteger gasLimit = BigInteger.valueOf(300000);
 
             // 6. Crear RawTransaction
             RawTransaction rawTransaction = RawTransaction.createTransaction(
@@ -261,10 +260,13 @@ public class Web3Manager {
                     encodedFunction
             );
 
-            // 7. Firmar transacción con credentials
-            byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials);
+            // 7. Firmar transacción
+            byte[] signedMessage = TransactionEncoder.signMessage(
+                    rawTransaction,
+                    11155111,  // Chain ID de Sepolia
+                    credentials
+            );
             String hexValue = Numeric.toHexString(signedMessage);
-
             Log.d(TAG, "Transacción firmada: " + hexValue);
 
             // 8. Enviar transacción
@@ -277,17 +279,112 @@ public class Web3Manager {
             }
 
             String transactionHash = ethSendTransaction.getTransactionHash();
+            Log.d(TAG, "Transacción enviada - TX Hash: " + transactionHash);
 
-            Log.d(TAG, "Transacción enviada");
-            Log.d(TAG, "Transaction Hash: " + transactionHash);
+            // 9. Esperar receipt y extraer hashInicial del evento
+            Log.d(TAG, "Esperando receipt y extrayendo hashInicial...");
+            String hashInicialHex = esperarYExtraerHashInicial(transactionHash);
 
-            return transactionHash;
+            Log.d(TAG, "HashInicial obtenido: " + hashInicialHex);
+
+            return new String[]{transactionHash, hashInicialHex};
 
         } catch (Exception e) {
             Log.e(TAG, "Error al registrar emisor", e);
             return null;
         }
     }
+
+    /**
+     * Espera el receipt de la transacción y extrae hashInicial del evento EmisorRegistrado
+     */
+    private String esperarYExtraerHashInicial(String txHash) throws Exception {
+
+        Log.d(TAG, ">>> Esperando receipt de transacción: " + txHash);
+
+        // Esperar hasta 60 segundos
+        int intentos = 0;
+        int maxIntentos = 30; // 30 intentos x 2 segundos = 60 segundos
+
+        while (intentos < maxIntentos) {
+            try {
+                EthGetTransactionReceipt receiptResponse =
+                        web3j.ethGetTransactionReceipt(txHash).send();
+
+                if (receiptResponse.getTransactionReceipt().isPresent()) {
+
+                    TransactionReceipt receipt = receiptResponse.getTransactionReceipt().get();
+
+                    Log.d(TAG, "Receipt obtenido, buscando evento...");
+
+                    // Extraer hashInicial del evento EmisorRegistrado
+                    // event EmisorRegistrado(address indexed emisor, bytes32 deviceId, bytes32 hashInicial, uint256 timestamp)
+
+                    for (org.web3j.protocol.core.methods.response.Log log : receipt.getLogs()) {
+
+                        if (log.getTopics().isEmpty()) {
+                            continue;
+                        }
+
+                        // El primer topic es el hash del evento
+                        String eventSignature = log.getTopics().get(0);
+
+                        // Hash del evento: keccak256("EmisorRegistrado(address,bytes32,bytes32,uint256)")
+                        String expectedEventHash = Hash.sha3String(
+                                "EmisorRegistrado(address,bytes32,bytes32,uint256)"
+                        );
+
+                        Log.d(TAG, "Event signature encontrado: " + eventSignature);
+                        Log.d(TAG, "Event signature esperado: " + expectedEventHash);
+
+                        if (eventSignature.equalsIgnoreCase(expectedEventHash)) {
+
+                            Log.d(TAG, "Evento EmisorRegistrado encontrado!");
+
+                            // Los datos no indexados están en log.getData()
+                            // deviceId (bytes32), hashInicial (bytes32), timestamp (uint256)
+                            String data = log.getData();
+
+                            Log.d(TAG, "Datos del evento: " + data);
+
+                            // Remover "0x"
+                            if (data.startsWith("0x")) {
+                                data = data.substring(2);
+                            }
+
+                            // Verificar que tenemos suficientes datos
+                            if (data.length() < 192) { // 3 x 64 chars (3 x 32 bytes)
+                                throw new Exception("Datos del evento incompletos: " + data.length() + " chars");
+                            }
+
+                            // deviceId = primeros 64 chars (32 bytes)
+                            // hashInicial = siguientes 64 chars (32 bytes)
+                            // timestamp = últimos 64 chars (32 bytes)
+
+                            String hashInicialHex = "0x" + data.substring(64, 128);
+
+                            Log.d(TAG, "HashInicial extraído del evento: " + hashInicialHex);
+
+                            return hashInicialHex;
+                        }
+                    }
+
+                    throw new Exception("No se encontró el evento EmisorRegistrado en el receipt");
+                }
+
+                Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
+                Thread.sleep(2000);
+                intentos++;
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new Exception("Interrupted while waiting for receipt");
+            }
+        }
+
+        throw new Exception("Timeout: No se recibió el receipt en 60 segundos");
+    }
+
     public String configurarWhitelist(
             Credentials credentials,
             String[] receptores,

@@ -219,6 +219,10 @@ public class GenerarPagoActivity extends AppCompatActivity {
         long nonce = generarNonce();
         byte[] hashUsado = obtenerHashUsado();
 
+        if (hashUsado == null){
+            return;
+        }
+
         this.tvEstado.setText("Firmando pago con la biometría...");
         btnGenerarPago.setEnabled(false);
 
@@ -291,10 +295,17 @@ public class GenerarPagoActivity extends AppCompatActivity {
     }
 
     private byte[] obtenerHashUsado() {
-        byte[] hash = new byte[32];
-        new SecureRandom().nextBytes(hash);
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String hashActualHex = prefs.getString("HASH_ACTUAL", null);
 
-        return hash;
+        if (hashActualHex == null) {
+            tvEstado.setText(" Error: No hay hash actual\n\nRegístrate primero en blockchain");
+            btnGenerarPago.setEnabled(true);
+            return null;
+        }
+
+        byte[] hashActual = Numeric.hexStringToByteArray(hashActualHex);
+        return hashActual;
     }
 
     private void onPagoFirmado(String pagoId, String receptor, long montoWei,
