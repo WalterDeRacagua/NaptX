@@ -12,13 +12,13 @@
         android:gravity="center_horizontal">
 
         <!-- Logo o ícono -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🔐"
-            android:textSize="80sp"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="24dp"/>
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/logo_koala"
+            android:contentDescription="@string/logo_de_la_aplicaci_n"
+            android:layout_margin="24dp"/>
 
         <!-- Título -->
         <TextView
@@ -57,7 +57,7 @@
             android:id="@+id/btnCrearWallet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🔐 Crear Wallet"
+            android:text="Crear Wallet"
             android:textSize="18sp"
             android:paddingVertical="16dp"
             android:layout_marginBottom="16dp"/>
