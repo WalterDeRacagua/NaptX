@@ -121,7 +121,7 @@
             android:id="@+id/btnCrearWallet"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="🔐 Crear Wallet"
+            android:text="Crear Wallet"
             android:textSize="18sp"
             android:paddingVertical="16dp"
             style="@style/Widget.Material3.Button"
