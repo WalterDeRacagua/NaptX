@@ -3,6 +3,7 @@ import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Array;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
@@ -14,6 +15,7 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -529,6 +531,79 @@ public class Web3Manager {
 
     public EthGetTransactionReceipt obtenerReceipt(String txHash) throws Exception {
         return web3j.ethGetTransactionReceipt(txHash).send();
+    }
+
+    /**
+     * Prepara un pago en la Blockchain (llamado por el RECEPTOR)
+     * */
+    public String[] prepararPago(Credentials credentials, byte[] hashUsado, long amount, String receptor, long timestamp, long nonce, byte[] deviceId, byte[]firma) throws Exception {
+        Log.d(TAG, "=== PREPARAR PAGO ===");
+        Log.d(TAG, "HashUsado: " + Numeric.toHexString(hashUsado));
+        Log.d(TAG, "Amount: " + amount);
+        Log.d(TAG, "Receptor: " + receptor);
+        Log.d(TAG, "Timestamp: " + timestamp);
+        Log.d(TAG, "Nonce: " + nonce);
+        Log.d(TAG, "DeviceId: " + Numeric.toHexString(deviceId));
+        Log.d(TAG, "Firma: " + Numeric.toHexString(firma));
+
+        //Preparamos la función que se va a lanzar a la blockchain
+        Function function = new Function(
+                "prepararPago",
+                Arrays.asList(
+                        new Bytes32(hashUsado),
+                        new Uint256(amount),
+                        new Address(receptor),
+                        new Uint256(timestamp),
+                        new Uint256(nonce),
+                        new Bytes32(deviceId),
+                        new DynamicBytes(firma)
+                ), Collections.emptyList()
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        EthGetTransactionCount ethGetTransactionCount = this.web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send();
+
+        BigInteger txNonce = ethGetTransactionCount.getTransactionCount();
+
+        EthGasPrice ethGasPrice = this.web3j.ethGasPrice().send();
+        BigInteger gasPrice = ethGasPrice.getGasPrice();
+
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(500000),
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+        byte[] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                11155111,
+                credentials
+        );
+        String hexValue = Numeric.toHexString(signedMessage);
+
+        // Enviar transacción
+        EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
+
+        if (ethSendTransaction.hasError()) {
+            throw new Exception("Error: " + ethSendTransaction.getError().getMessage());
+        }
+
+        String transactionHash = ethSendTransaction.getTransactionHash();
+        Log.d(TAG, "Transacción enviada - TX Hash: " + transactionHash);
+
+        // Esperar receipt y extraer pagoId + hashPreparado del evento
+        Log.d(TAG, "Esperando receipt y extrayendo datos del evento...");
+        // String[] resultado = esperarYExtraerPagoPreparado(transactionHash);
+
+        //Log.d(TAG, " PagoId: " + resultado[0]);
+        //Log.d(TAG, " HashPreparado: " + resultado[1]);
+
+        //return resultado;
     }
 }
 
