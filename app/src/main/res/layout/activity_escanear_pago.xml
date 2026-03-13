@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_dark"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Escanear Pago"
+            android:textSize="28sp"
+            android:textColor="@color/text_on_dark"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Estado -->
+        <TextView
+            android:id="@+id/tvEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Listo para escanear"
+            android:textSize="16sp"
+            android:textColor="@color/text_on_dark"
+            android:gravity="center"
+            android:padding="16dp"
+            android:background="@drawable/estado_background"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Botón escanear -->
+        <Button
+            android:id="@+id/btnEscanear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ESCANEAR QR"
+            android:textSize="18sp"
+            android:textColor="@color/text_on_dark"
+            android:background="@drawable/button_primary"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Datos del pago -->
+        <TextView
+            android:id="@+id/tvDatos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:textColor="@color/text_on_dark"
+            android:padding="16dp"
+            android:background="@drawable/estado_background"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+</ScrollView>

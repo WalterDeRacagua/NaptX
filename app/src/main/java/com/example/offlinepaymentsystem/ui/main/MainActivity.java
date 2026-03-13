@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.model.Emisor;
 import com.example.offlinepaymentsystem.ui.emisor.EmisorActivity;
+import com.example.offlinepaymentsystem.ui.receptor.EscanearPagoActivity;
 import com.example.offlinepaymentsystem.ui.test.TestConnectionActivity;
 import com.example.offlinepaymentsystem.ui.test.TestEstadoEmisorActivity;
 import com.example.offlinepaymentsystem.ui.wallet.CrearWalletActivity;
@@ -84,8 +85,8 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
     private void onReceiverClicked() {
-        //Toast para que aparezca un pequeño mensaje emergente en la pantalla
-        Toast.makeText(this, "Modo receptor", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, EscanearPagoActivity.class);
+        startActivity(intent);
     }
 
     private void onSyncronizeClicked(){

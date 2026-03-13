@@ -3,7 +3,6 @@ import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.Array;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
@@ -28,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import android.content.Context;
+import android.nfc.Tag;
 import android.util.Log;
 
 import com.example.offlinepaymentsystem.utils.Constants;
@@ -598,12 +598,86 @@ public class Web3Manager {
 
         // Esperar receipt y extraer pagoId + hashPreparado del evento
         Log.d(TAG, "Esperando receipt y extrayendo datos del evento...");
-        // String[] resultado = esperarYExtraerPagoPreparado(transactionHash);
+        String[] resultado = esperarYExtraerPagoPreparado(transactionHash);
 
-        //Log.d(TAG, " PagoId: " + resultado[0]);
-        //Log.d(TAG, " HashPreparado: " + resultado[1]);
+        Log.d(TAG, " PagoId: " + resultado[0]);
+        Log.d(TAG, " HashPreparado: " + resultado[1]);
 
-        //return resultado;
+        return resultado;
+    }
+
+
+    private String[] esperarYExtraerPagoPreparado(String txHas) throws Exception {
+        Log.d(TAG, ">>> Esperando la receipt de la transacción: " + txHas);
+
+        int intentos =0;
+        int maxIntentos= 60;
+
+        while (intentos < maxIntentos){
+            try{
+                EthGetTransactionReceipt receiptResponse = this.web3j.ethGetTransactionReceipt(txHas).send();
+
+                if (receiptResponse.getTransactionReceipt().isPresent()){
+                    TransactionReceipt receipt = receiptResponse.getTransactionReceipt().get();
+
+                    Log.d(TAG, "Receipt obtenido, buscando evento... ");
+
+                    for (org.web3j.protocol.core.methods.response.Log log: receipt.getLogs()) {
+                        if (log.getTopics().isEmpty()){
+                            continue;
+                        }
+
+                        String eventSignature = log.getTopics().get(0);
+
+                        String expectedEventHash = Hash.sha3String(
+                                "PagoPreparado(bytes32,address,address,uint256,bytes32,uint256)"
+                        );
+
+                        Log.d(TAG, "Event signature encontrado: " + eventSignature);
+                        Log.d(TAG, "Event signature esperadp: " + expectedEventHash);
+
+                        if (eventSignature.equalsIgnoreCase(expectedEventHash)){
+                            Log.d(TAG, "Evento preparado encontrado");
+
+                            //Topics: [eventHash, pagoId, emisor, receptor];
+                            String pagoId = log.getTopics().get(1);
+
+                            // Data: amount (uint256), hashPreparado (bytes32), timestamp (uint256)
+                            String data = log.getData();
+
+                            if (data.startsWith("0x")) {
+                                data = data.substring(2);
+                            }
+
+                            // amount = 0-64
+                            // hashPreparado = 64-128
+                            // timestamp = 128-192
+
+                            if (data.length() < 192) {
+                                throw new Exception("Datos del evento incompletos");
+                            }
+
+                            String hashPreparado = "0x" + data.substring(64, 128);
+
+                            Log.d(TAG, "PagoId que pillamos: " + pagoId);
+                            Log.d(TAG, "HashPreparado que pillamos: " + hashPreparado);
+
+                            return new String[]{pagoId, hashPreparado};
+                        }
+
+                        throw new Exception("No hemos encontrado el evento PagoPreparado en el receipt.");
+                    }
+
+                    Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
+                    Thread.sleep(2000);
+                    intentos++;
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new Exception("Interrumpido mientras esperabamos la receipt.");
+            }
+        }
+        throw new Exception("Error de timeout");
     }
 }
 

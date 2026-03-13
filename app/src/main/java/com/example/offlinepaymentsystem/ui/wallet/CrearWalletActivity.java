@@ -47,7 +47,7 @@ public class CrearWalletActivity extends AppCompatActivity {
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         // Inicializar WalletManager
-            walletManager = new WalletManager(this);
+        this.walletManager = new WalletManager(this);
 
         // Verificar si ya existe wallet
         verificarWalletExistente();
@@ -79,7 +79,7 @@ public class CrearWalletActivity extends AppCompatActivity {
         tvAddress.setVisibility(TextView.VISIBLE);
 
         btnCrearWallet.setEnabled(false);
-        btnCrearWallet.setText("✓ Wallet ya creada");
+        btnCrearWallet.setText("Wallet ya creada");
 
         btnContinuar.setEnabled(true);
 
