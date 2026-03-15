@@ -85,15 +85,36 @@ public class WalletManager {
     /***
      * Méthod para verificar si una wallet ya existe
      */
-    public boolean existeWallet(){
-        File walletFile = new File(this.context.getFilesDir(), WALLET_FILE);
-        boolean fileExists = walletFile.exists();
+    public boolean existeWallet() {
+        try {
+            // PASO 1: Verificar que la clave existe en Keystore
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
 
-        try{
-            boolean keyExists = keyStore.containsAlias(AES_KEY_ALIAS);
-            return fileExists && keyExists;
+            if (!keyStore.containsAlias(AES_KEY_ALIAS)) {
+                Log.w(TAG, "No existe clave en Keystore");
+                return false;
+            }
+
+            // PASO 2: Verificar que existe el archivo de wallet cifrada
+            File walletFile = new File(context.getFilesDir(), WALLET_FILE);
+
+            if (!walletFile.exists()) {
+                Log.w(TAG, "No existe archivo de wallet cifrada");
+                return false;
+            }
+
+            // PASO 3: Verificar que el archivo tiene contenido
+            if (walletFile.length() == 0) {
+                Log.w(TAG, "Archivo de wallet está vacío");
+                return false;
+            }
+
+            Log.d(TAG, "Wallet existe (Keystore + archivo)");
+            return true;
+
         } catch (Exception e) {
-            Log.e(TAG, "Error al verificar si existe o no la Wallet", e);
+            Log.e(TAG, "Error al verificar wallet", e);
             return false;
         }
     }

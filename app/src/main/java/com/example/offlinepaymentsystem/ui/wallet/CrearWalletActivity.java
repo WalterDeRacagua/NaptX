@@ -64,11 +64,24 @@ public class CrearWalletActivity extends AppCompatActivity {
         boolean existeWallet = walletManager.existeWallet();
         String addressGuardada = prefs.getString(KEY_WALLET_ADDRESS, null);
 
+        if (addressGuardada != null && !existeWallet) {
+            // SharedPreferences dice que hay wallet, pero no existe realmente
+            Log.w(TAG, "ESTADO INCONSISTENTE: Limpiando SharedPreferences...");
+
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
+
+            addressGuardada = null;
+
+            Toast.makeText(this,
+                    "Datos inconsistentes detectados. Por favor, crea una nueva wallet.",
+                    Toast.LENGTH_LONG).show();
+        }
+
         if (existeWallet && addressGuardada != null) {
-            // Ya tiene wallet
             mostrarWalletExistente(addressGuardada);
         } else {
-            // No tiene wallet
             mostrarPantallaCreacion();
         }
     }
@@ -104,6 +117,11 @@ public class CrearWalletActivity extends AppCompatActivity {
         walletManager.crearWallet(new CrearWalletCallback() {
             @Override
             public void onWalletCreada(String address) {
+                Log.d(TAG, "========================================");
+                Log.d(TAG, "WALLET CREADA EXITOSAMENTE");
+                Log.d(TAG, "========================================");
+                Log.d(TAG, "ADDRESS: " + address);
+                Log.d(TAG, "========================================");
                 runOnUiThread(()->{
                     tvEstado.setText("Wallet creada exitosamente");
                     tvAddress.setText(address);

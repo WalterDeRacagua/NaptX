@@ -17,6 +17,8 @@ import com.example.offlinepaymentsystem.data.local.Converters;
 @TypeConverters(Converters.class)
 public class PagoPendiente {
 
+
+
     /**
      * Estados del pago:
      * PREPARADO: Fase 1: pago creado offline, QR generado
@@ -47,6 +49,7 @@ public class PagoPendiente {
     private byte[] txId;
     private byte[] deviceId;
     private byte[] firma;
+    private long nonce;
 
     // =================== CONSTRUCTOR VACÍO EN ROOM ===================
 
@@ -56,7 +59,7 @@ public class PagoPendiente {
     }
 
     public PagoPendiente(@NonNull String pagoId, String emisor, String receptor, long amount, byte[] hashUsado,
-                         byte[] hashPreparado, byte[] deviceId, byte[] firma){
+                         byte[] hashPreparado, byte[] deviceId, byte[] firma, long timestamp, long nonce){
         this.pagoId = pagoId;
         this.emisor = emisor;
         this.receptor=receptor;
@@ -65,7 +68,8 @@ public class PagoPendiente {
         this.hashPreparado = hashPreparado;
         this.deviceId = deviceId;
         this.firma = firma;
-        this.timestampPreparacion= System.currentTimeMillis()/1000;
+        this.timestampPreparacion= timestamp;
+        this.nonce = nonce;
         this.estado = Estado.PREPARADO;
         this.hashFinal =null;
         this.timestampConfirmacion=0; //Aun no lo hemos podido confirmar
@@ -180,5 +184,13 @@ public class PagoPendiente {
 
     public void setFirma(byte[] firma) {
         this.firma = firma;
+    }
+
+    public long getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(long nonce) {
+        this.nonce = nonce;
     }
 }

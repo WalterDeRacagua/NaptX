@@ -42,14 +42,14 @@
             android:id="@+id/btnEscanear"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ESCANEAR QR"
+            android:text="Escanear QR"
             android:textSize="18sp"
             android:textColor="@color/text_on_dark"
             android:background="@drawable/button_primary"
             android:padding="16dp"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Datos del pago -->
+        <!-- Datos del pago escaneado -->
         <TextView
             android:id="@+id/tvDatos"
             android:layout_width="match_parent"
@@ -59,7 +59,56 @@
             android:textColor="@color/text_on_dark"
             android:padding="16dp"
             android:background="@drawable/estado_background"
-            android:visibility="gone"/>
+            android:visibility="gone"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- QR de confirmación -->
+        <LinearLayout
+            android:id="@+id/layoutQRConfirmacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone"
+            android:padding="16dp"
+            android:background="@drawable/qr_background">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QR de confirmación"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/success"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Muestra este QR al emisor para confirmar el pago"
+                android:textSize="14sp"
+                android:textColor="@color/text_on_dark"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
+            <ImageView
+                android:id="@+id/ivQRConfirmacion"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
+                android:contentDescription="QR de confirmación"
+                android:background="@android:color/white"
+                android:padding="8dp"/>
+
+            <Button
+                android:id="@+id/btnNuevoEscaneo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nuevo Escaneo"
+                android:textSize="14sp"
+                android:background="@drawable/button_secondary"
+                android:layout_marginTop="16dp"/>
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

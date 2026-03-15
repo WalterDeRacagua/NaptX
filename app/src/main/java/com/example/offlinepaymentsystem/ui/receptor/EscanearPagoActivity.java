@@ -3,11 +3,14 @@ package com.example.offlinepaymentsystem.ui.receptor;
 import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,9 +24,14 @@ import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
 import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
@@ -49,6 +57,9 @@ public class EscanearPagoActivity extends AppCompatActivity {
     private TextView tvEstado;
     private Button btnEscanear;
     private TextView tvDatos;
+    private LinearLayout layoutQRConfirmacion;
+    private ImageView ivQRConfirmacion;
+    private Button btnNuevoEscaneo;
 
     private WalletManager walletManager;
     private Web3Manager web3Manager;
@@ -74,9 +85,12 @@ public class EscanearPagoActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvEstado = findViewById(R.id.tvEstado);
-        btnEscanear = findViewById(R.id.btnEscanear);
-        tvDatos = findViewById(R.id.tvDatos);
+        this.tvEstado = findViewById(R.id.tvEstado);
+        this.btnEscanear = findViewById(R.id.btnEscanear);
+        this.tvDatos = findViewById(R.id.tvDatos);
+        this.layoutQRConfirmacion = findViewById(R.id.layoutQRConfirmacion);
+        this.ivQRConfirmacion = findViewById(R.id.ivQRConfirmacion);
+        this.btnNuevoEscaneo = findViewById(R.id.btnNuevoEscaneo);
     }
 
     private void initData() {
@@ -96,7 +110,15 @@ public class EscanearPagoActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnEscanear.setOnClickListener(v -> verificarPermisoYEscanear());
+        this.btnEscanear.setOnClickListener(v -> verificarPermisoYEscanear());
+        this.btnNuevoEscaneo.setOnClickListener(v -> reiniciarEscaneo());
+    }
+
+    private void reiniciarEscaneo(){
+        this.layoutQRConfirmacion.setVisibility(View.GONE);
+        this.tvDatos.setVisibility(View.GONE);
+        this.btnEscanear.setEnabled(true);
+        this.tvEstado.setText("Listo para escanear otro pago");
     }
 
     private void verificarPermisoYEscanear() {
@@ -232,8 +254,7 @@ public class EscanearPagoActivity extends AppCompatActivity {
                         "HashPreparado:\n" + hashPreparado.substring(0, 20) + "...\n\n" +
                         "Ahora genera el QR para que el emisor confirme");
 
-                // TODO: Generar QR con pagoId + hashPreparado para el emisor
-                btnEscanear.setEnabled(true);
+                generarQRConfirmacion(pagoId, hashPreparado);
             });
 
         } catch (Exception e) {
@@ -250,5 +271,40 @@ public class EscanearPagoActivity extends AppCompatActivity {
         return String.format("%.6f", eth);
     }
 
+    private void generarQRConfirmacion(String pagoId, String hashPreparado){
+        try {
+            JSONObject json = new JSONObject();
+            json.put("pagoId", pagoId);
+            json.put("hashPreparado", hashPreparado);
+
+            String datosQR = json.toString();
+
+            Bitmap qrBitmap = generarQRBitmap(datosQR, 512, 512);
+
+            this.ivQRConfirmacion.setImageBitmap(qrBitmap);
+            this.layoutQRConfirmacion.setVisibility(View.VISIBLE);
+
+            this.tvEstado.setText("PAGO PREPARADO\n\n Muestra QR al emisor");
+            this.btnEscanear.setEnabled(false);
+
+        } catch (JSONException | WriterException e) {
+            this.tvEstado.setText("Error al generar QR: \n " +e.getMessage());
+        }
+    }
+
+    private Bitmap generarQRBitmap(String content, int width,int height) throws WriterException {
+        QRCodeWriter writer = new QRCodeWriter();
+        BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+
+        for (int x= 0; x< width; x++){
+            for (int y =0; y< height;y++){
+                bitmap.setPixel(x,y, bitMatrix.get(x,y)? 0xFF000000 : 0xFFFFFFFF);
+            }
+        }
+
+        return bitmap;
+    }
 }
 

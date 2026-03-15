@@ -321,7 +321,9 @@ public class GenerarPagoActivity extends AppCompatActivity {
                 hashUsado,
                 null,
                 deviceId,
-                firma
+                firma,
+                timestamp,
+                nonce
         );
 
         // Guardar en base de datos local
@@ -350,7 +352,7 @@ public class GenerarPagoActivity extends AppCompatActivity {
             json.put("amount", pagoActual.getAmount());
             json.put("receptor", pagoActual.getReceptor());
             json.put("timestamp", pagoActual.getTimestampPreparacion());
-            json.put("nonce", System.currentTimeMillis()); // Nonce usado en la firma
+            json.put("nonce", pagoActual.getNonce());
             json.put("deviceId", Numeric.toHexString(pagoActual.getDeviceId()));
             json.put("firma", Numeric.toHexString(pagoActual.getFirma()));
 
