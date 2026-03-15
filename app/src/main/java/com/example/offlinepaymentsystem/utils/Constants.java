@@ -19,7 +19,7 @@ public class Constants {
     /*Timeout para las conexiones http (ms)*/
     public static final int HTTP_TIMEOUT =30000;
 
-    public static final String CONTRACT_ADDRESS="0x9B6af68DF1b6d539C778ea364641E575a48150f1";
+    public static final String CONTRACT_ADDRESS="0xbd53Ad3963B1E94d1A3Cc3B9DF5C711386f42D65";
 
     // ========================================
     // ALMACENAMIENTO LOCAL

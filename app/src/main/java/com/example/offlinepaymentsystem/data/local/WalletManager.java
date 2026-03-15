@@ -908,6 +908,108 @@ public class WalletManager {
 
         return hash;
     }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    public void firmarConfirmacionPago(byte[] pagoId, byte[] hashPreparado, FirmarMensajeCallback callback){
+        try {
+            //Para poder confirmar pago la precondición es que tiene que haber una wallet.
+            if (!this.existeWallet()){
+                callback.onError("No existe wallet");
+                return;
+            }
+
+            byte[] mensaje = construirMensajeConfirmacion(pagoId, hashPreparado);
+
+            Log.d(TAG, "=== FIRMAR CONFIRMACIÓN ===");
+            Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
+            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
+            Log.d(TAG, "Mensaje: " + Numeric.toHexString(mensaje));
+
+            byte[] encryptedKey = leerDeFichero(WALLET_FILE);
+            byte[] iv = leerDeFichero(IV_FILE);
+
+            SecretKey secretKey = (SecretKey) keyStore.getKey(AES_KEY_ALIAS, null);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+
+            BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(cipher);
+
+            BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle("Confirmar pago").setSubtitle("Firma la confirmación del pago OFFLINE").setNegativeButtonText("Cancelar")
+                    .build();
+            BiometricPrompt biometricPrompt = new BiometricPrompt(
+                    (FragmentActivity) context,
+                    new BiometricPrompt.AuthenticationCallback() {
+                        @Override
+                        public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                            super.onAuthenticationSucceeded(result);
+
+                            try {
+
+                                Cipher authenticatedCipher = result.getCryptoObject().getCipher();
+                                byte[] decryptedKey = authenticatedCipher.doFinal(encryptedKey);
+                                String privateKeyHex = new String(decryptedKey);
+
+
+                                Credentials credentials = Credentials.create(privateKeyHex);
+
+                                Sign.SignatureData signatureData = Sign.signMessage(
+                                        mensaje,
+                                        credentials.getEcKeyPair(),
+                                        false
+                                );
+
+                                byte[] firma = convertirFirmaEthereum(signatureData);
+
+                                Log.d(TAG, "Confirmación firmada");
+                                Log.d(TAG, "Firma: " + Numeric.toHexString(firma));
+
+                                callback.onMensajeFirmado(firma);
+
+                                Arrays.fill(decryptedKey, (byte) 0);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error al firmar confirmación" , e);
+                                callback.onError("Error al firmar la confirmación: " +e.getMessage());
+                            }
+                        }
+
+                        @Override
+                        public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                            super.onAuthenticationError(errorCode, errString);
+                            callback.onError("Error de autenticación" +errString);
+                        }
+
+
+                        @Override
+                        public void onAuthenticationFailed() {
+                            super.onAuthenticationFailed();
+                            callback.onError("Autenticación fallida.");
+                        }
+                    }
+            );
+
+            biometricPrompt.authenticate(promptInfo, cryptoObject);
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private byte[] construirMensajeConfirmacion(byte[] pagoId, byte[] hashPreparado){
+        byte[] palabraConfirmar = "confirmar".getBytes();
+
+        //32 + 32 + 9
+        byte[] mensaje = new byte[pagoId.length + hashPreparado.length + palabraConfirmar.length];
+
+        System.arraycopy(pagoId, 0, mensaje, 0,pagoId.length);
+        System.arraycopy(hashPreparado, 0, mensaje, pagoId.length ,hashPreparado.length);
+        System.arraycopy(palabraConfirmar, 0, mensaje, pagoId.length + hashPreparado.length ,palabraConfirmar.length);
+
+        return Hash.sha3(mensaje);
+    }
 }
 
 
