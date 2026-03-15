@@ -71,6 +71,15 @@
             android:paddingVertical="16dp"
             android:layout_marginBottom="16dp"/>
 
+        <Button
+            android:id="@+id/btnConfirmarPago"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Confirmar Pago"
+            android:textSize="16sp"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"/>
+
         <!-- Botón Ver Estado -->
         <Button
             android:id="@+id/btnVerEstado"

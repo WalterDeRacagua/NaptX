@@ -21,6 +21,7 @@ public class EmisorActivity extends AppCompatActivity {
     private Button btnRegistrar;
     private Button btnGestionarWhitelist;
     private Button btnHacerPago;
+    private Button btnConfirmarPago;
     private Button btnVerEstado;
 
     private SharedPreferences prefs;
@@ -29,37 +30,40 @@ public class EmisorActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_emisor);
+        this.setContentView(R.layout.activity_emisor);
 
         // Inicializar vistas
-        tvWelcome = findViewById(R.id.tvWelcome);
-        tvAddress = findViewById(R.id.tvAddress);
-        btnRegistrar = findViewById(R.id.btnRegistrar);
-        btnGestionarWhitelist = findViewById(R.id.btnGestionarWhitelist);
-        btnHacerPago = findViewById(R.id.btnHacerPago);
-        btnVerEstado = findViewById(R.id.btnVerEstado);
+        this.tvWelcome = findViewById(R.id.tvWelcome);
+        this.tvAddress = findViewById(R.id.tvAddress);
+        this.btnRegistrar = findViewById(R.id.btnRegistrar);
+        this.btnGestionarWhitelist = findViewById(R.id.btnGestionarWhitelist);
+        this.btnHacerPago = findViewById(R.id.btnHacerPago);
+        this.btnConfirmarPago = findViewById(R.id.btnConfirmarPago);
+        this.btnVerEstado = findViewById(R.id.btnVerEstado);
 
         // Obtener address
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        address = prefs.getString(KEY_WALLET_ADDRESS, null);
+        this.prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        this.address = prefs.getString(KEY_WALLET_ADDRESS, null);
 
-        if (address == null) {
-            tvWelcome.setText("No tienes wallet creada");
-            tvAddress.setText("Crea una wallet primero desde el menú principal");
-            btnRegistrar.setEnabled(false);
-            btnGestionarWhitelist.setEnabled(false);
-            btnHacerPago.setEnabled(false);
-            btnVerEstado.setEnabled(false);
+        if (this.address == null) {
+            this.tvWelcome.setText("No tienes wallet creada");
+            this.tvAddress.setText("Crea una wallet primero desde el menú principal");
+            this.btnRegistrar.setEnabled(false);
+            this.btnGestionarWhitelist.setEnabled(false);
+            this.btnHacerPago.setEnabled(false);
+            this.btnConfirmarPago.setEnabled(false);
+            this.btnVerEstado.setEnabled(false);
         } else {
-            tvWelcome.setText("Bienvenido, Emisor");
-            tvAddress.setText("Tu address:\n" + address);
+            this.tvWelcome.setText("Bienvenido, Emisor");
+            this.tvAddress.setText("Tu address:\n" + address);
         }
 
         // Botones
-        btnRegistrar.setOnClickListener(v -> onRegistrarClicked());
-        btnGestionarWhitelist.setOnClickListener(v -> onGestionarWhitelistClicked());
-        btnHacerPago.setOnClickListener(v -> onHacerPagoClicked());
-        btnVerEstado.setOnClickListener(v -> onVerEstadoClicked());
+        this.btnRegistrar.setOnClickListener(v -> onRegistrarClicked());
+        this.btnGestionarWhitelist.setOnClickListener(v -> onGestionarWhitelistClicked());
+        this.btnHacerPago.setOnClickListener(v -> onHacerPagoClicked());
+        this.btnConfirmarPago.setOnClickListener(v -> onConfirmarPagoClicked());
+        this.btnVerEstado.setOnClickListener(v -> onVerEstadoClicked());
     }
 
     private void onRegistrarClicked() {
@@ -73,7 +77,12 @@ public class EmisorActivity extends AppCompatActivity {
     }
 
     private void onHacerPagoClicked() {
-        Intent intent = new Intent(this, GenerarPagoActivity.class);  // ← CAMBIADO
+        Intent intent = new Intent(this, GenerarPagoActivity.class);
+        startActivity(intent);
+    }
+
+    private void onConfirmarPagoClicked() {
+        Intent intent = new Intent(this, ConfirmarPagoActivity.class);
         startActivity(intent);
     }
 
