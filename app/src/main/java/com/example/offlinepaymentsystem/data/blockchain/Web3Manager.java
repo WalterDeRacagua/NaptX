@@ -679,5 +679,144 @@ public class Web3Manager {
         }
         throw new Exception("Error de timeout");
     }
+
+    public String confirmarPago(Credentials credentials, byte[] pagoId, byte[] hashPreparado, byte[] firmaConfirmacion) throws  Exception {
+        Log.d(TAG, "=== CONFIRMAR PAGO ===");
+        Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
+        Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
+        Log.d(TAG, "FirmaConfirmacion: " + Numeric.toHexString(firmaConfirmacion));
+
+        Function function = new Function(
+                "confirmarPago",
+                Arrays.asList(
+                        new Bytes32(pagoId),
+                        new Bytes32(hashPreparado),
+                        new DynamicBytes(firmaConfirmacion)
+                ), Collections.emptyList()
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send();
+        BigInteger txNonce = ethGetTransactionCount.getTransactionCount();
+
+        EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
+        BigInteger gasPrice = ethGasPrice.getGasPrice();
+
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(500000),
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+
+        byte[] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                11155111,
+                credentials
+        );
+        String hexValue = Numeric.toHexString(signedMessage);
+
+        EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
+
+        if (ethSendTransaction.hasError()){
+            throw new Exception("Error: " + ethSendTransaction.getError().getMessage());
+        }
+
+        String transactionHash = ethSendTransaction.getTransactionHash();
+
+        Log.d(TAG, "Transacción enviada - TX Hash" + transactionHash);
+        Log.d(TAG, "Esperando receipt y extrayendo Hashfinal.");
+        String hashFinal = esperarYExtraerPagoConfirmado(transactionHash);
+
+        return hashFinal;
+    }
+
+    private String esperarYExtraerPagoConfirmado(String txHash) throws Exception {
+
+        Log.d(TAG, ">>> Esperando receipt de transacción: " + txHash);
+
+        int intentos = 0;
+        int maxIntentos = 60; // 60 x 2s = 120 segundos
+
+        while (intentos < maxIntentos) {
+            try {
+                EthGetTransactionReceipt receiptResponse =
+                        web3j.ethGetTransactionReceipt(txHash).send();
+
+                if (receiptResponse.getTransactionReceipt().isPresent()) {
+
+                    TransactionReceipt receipt =
+                            receiptResponse.getTransactionReceipt().get();
+
+                    Log.d(TAG, "Receipt obtenido, buscando evento...");
+
+                    // Buscar evento PagoConfirmado
+                    // event PagoConfirmado(bytes32 indexed pagoId, address indexed emisor,
+                    //                      address indexed receptor, uint256 amount,
+                    //                      bytes32 hashFinal, uint256 timestamp)
+
+                    for (org.web3j.protocol.core.methods.response.Log log : receipt.getLogs()) {
+
+                        if (log.getTopics().isEmpty()) {
+                            continue;
+                        }
+
+                        String eventSignature = log.getTopics().get(0);
+
+                        // Hash del evento PagoConfirmado
+                        String expectedEventHash = org.web3j.crypto.Hash.sha3String(
+                                "PagoConfirmado(bytes32,address,address,uint256,bytes32,uint256)"
+                        );
+
+                        Log.d(TAG, "Event signature encontrado: " + eventSignature);
+                        Log.d(TAG, "Event signature esperado: " + expectedEventHash);
+
+                        if (eventSignature.equalsIgnoreCase(expectedEventHash)) {
+
+                            Log.d(TAG, "Evento PagoConfirmado encontrado!");
+
+                            // Data: amount (uint256), hashFinal (bytes32), timestamp (uint256)
+                            String data = log.getData();
+
+                            if (data.startsWith("0x")) {
+                                data = data.substring(2);
+                            }
+
+                            // amount = 0-64
+                            // hashFinal = 64-128
+                            // timestamp = 128-192
+
+                            if (data.length() < 192) {
+                                throw new Exception("Datos del evento incompletos");
+                            }
+
+                            String hashFinal = "0x" + data.substring(64, 128);
+
+                            Log.d(TAG, "HashFinal extraído: " + hashFinal);
+
+                            return hashFinal;
+                        }
+                    }
+
+                    throw new Exception("No se encontró el evento PagoConfirmado en el receipt");
+                }
+
+                Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
+                Thread.sleep(2000);
+                intentos++;
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new Exception("Interrupted while waiting for receipt");
+            }
+        }
+
+        throw new Exception("Timeout: No se recibió el receipt en 120 segundos");
+    }
 }
 

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Completar Pago"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Estado -->
+        <TextView
+            android:id="@+id/tvEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Escanea el QR 3 del emisor"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Botón escanear -->
+        <Button
+            android:id="@+id/btnEscanear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Escanear QR 3 del emisor"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Datos del pago -->
+        <TextView
+            android:id="@+id/tvDatos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Botón nuevo escaneo -->
+        <Button
+            android:id="@+id/btnNuevoEscaneo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Completar Otro Pago"
+            android:textSize="14sp"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+</ScrollView>
