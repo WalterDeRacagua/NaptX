@@ -39,6 +39,8 @@ import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.List;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class ConfirmarPagoActivity extends AppCompatActivity {
@@ -160,6 +162,10 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
 
             pagoId = Numeric.hexStringToByteArray(json.getString("pagoId"));
             hashPreparado = Numeric.hexStringToByteArray(json.getString("hashPreparado"));
+            long timestampPreparacion = json.getLong("timestampPreparacion");
+
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putLong("TIMESTAMP_PREPARACION", timestampPreparacion).apply();
 
             // Mostrar datos
             String datos = "Datos del pago:\n\n" +
@@ -185,29 +191,57 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
      * Busca el pago en la base de datos local usando el pagoId
      */
     private void buscarPagoLocal() {
-        String pagoIdString = Numeric.toHexString(pagoId);
+        tvEstado.setText("QR válido\n\nBuscando pago en BD local...");
 
-        pagoRepository.obtenerPagoPorID(pagoIdString, new RepositoryCallback<>() {
+        pagoRepository.obtenerPagosPreparados(new RepositoryCallback<List<PagoPendiente>>() {
             @Override
-            public void onSuccess(PagoPendiente result) {
+            public void onSuccess(java.util.List<PagoPendiente> pagos) {
                 runOnUiThread(() -> {
-                    if (result == null) {
-                        tvEstado.setText("Error: Pago no encontrado en BD local\n\n" +
-                                "Asegúrate de haber generado este pago en este dispositivo");
+                    if (pagos == null || pagos.isEmpty()) {
+                        tvEstado.setText("No hay pagos en BD local");
                         btnEscanear.setEnabled(true);
                         return;
                     }
 
-                    pagoLocal = result;
+                    // Ordenar por timestamp (más reciente primero)
+                    Collections.sort(pagos, (p1, p2) ->
+                            Long.compare(p2.getTimestampPreparacion(), p1.getTimestampPreparacion())
+                    );
 
-                    Log.d(TAG, "Pago encontrado en BD local");
-                    Log.d(TAG, "HashUsado: " + Numeric.toHexString(pagoLocal.getHashUsado()));
-                    Log.d(TAG, "Amount: " + pagoLocal.getAmount());
-                    Log.d(TAG, "Receptor: " + pagoLocal.getReceptor());
-                    Log.d(TAG, "Timestamp: " + pagoLocal.getTimestampPreparacion());
+                    // Tomar el más reciente en estado PREPARADO
+                    PagoPendiente pagoEncontrado = null;
+                    for (PagoPendiente pago : pagos) {
+                        if (pago.getEstado() == PagoPendiente.Estado.PREPARADO) {
+                            pagoEncontrado = pago;
+                            break;
+                        }
+                    }
 
+                    if (pagoEncontrado == null) {
+                        tvEstado.setText("No hay pagos preparados");
+                        btnEscanear.setEnabled(true);
+                        return;
+                    }
+
+                    pagoLocal = pagoEncontrado;
+
+                    // Actualizar con datos reales del contrato
+                    pagoLocal.setPagoId(Numeric.toHexString(pagoId));
+                    pagoLocal.setHashPreparado(hashPreparado);
+
+                    pagoRepository.actualizar(pagoLocal, new RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            Log.d(TAG, "Pago actualizado");
+                        }
+                        @Override
+                        public void onError(String message) {
+                            Log.e(TAG, "Error: " + message);
+                        }
+                    });
+
+                    Log.d(TAG, "Pago encontrado y actualizado");
                     tvEstado.setText("Pago encontrado\n\nCalculando hashFinal...");
-
                     calcularHashFinalYFirmar();
                 });
             }
@@ -215,24 +249,27 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 runOnUiThread(() -> {
-                    tvEstado.setText("Error al buscar pago:\n" + message);
+                    tvEstado.setText("Error: " + message);
                     btnEscanear.setEnabled(true);
                 });
             }
         });
     }
 
-    /**
-     * Calcula hashFinal = keccak256(hashUsado, amount, receptor, timestampPreparacion, "confirmado")
-     * IGUAL que el contrato
-     */
     private void calcularHashFinalYFirmar() {
         try {
             // Extraer datos del pago local
             byte[] hashUsado = pagoLocal.getHashUsado();
             long amount = pagoLocal.getAmount();
             String receptor = pagoLocal.getReceptor();
-            long timestamp = pagoLocal.getTimestampPreparacion();
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            long timestamp = prefs.getLong("TIMESTAMP_PREPARACION", 0);
+
+            if (timestamp == 0) {
+                tvEstado.setText("Error: No se encontró timestamp del contrato");
+                btnEscanear.setEnabled(true);
+                return;
+            }
 
             // Convertir amount a bytes32
             byte[] amountBytes = new byte[32];
@@ -295,9 +332,6 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Firma el mensaje de confirmación OFFLINE con biometría
-     */
     private void firmarConfirmacion(byte[] hashFinal) {
         walletManager.firmarConfirmacionPago(
                 pagoId,
@@ -322,11 +356,6 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         );
     }
 
-    /**
-     * Genera QR #3 con pagoId + hashPreparado + firmaConfirmacion
-     * NO incluye hashFinal (el contrato lo calcula)
-     * Pero GUARDA hashFinal como próximo hashUsado
-     */
     private void generarQRConfirmacion(byte[] hashFinal, byte[] firmaConfirmacion) {
         try {
             // PASO 1: Guardar hashFinal como próximo hashUsado
@@ -370,9 +399,6 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Convierte un string en una imagen de código QR
-     */
     private Bitmap generarQRBitmap(String content, int width, int height) throws WriterException {
         QRCodeWriter writer = new QRCodeWriter();
         BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);

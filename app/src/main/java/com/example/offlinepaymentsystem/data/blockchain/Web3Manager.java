@@ -659,10 +659,14 @@ public class Web3Manager {
 
                             String hashPreparado = "0x" + data.substring(64, 128);
 
-                            Log.d(TAG, "PagoId que pillamos: " + pagoId);
-                            Log.d(TAG, "HashPreparado que pillamos: " + hashPreparado);
+                            String timestampHex = data.substring(128, 192);
+                            long timestampPreparacion = new BigInteger(timestampHex, 16).longValue();
 
-                            return new String[]{pagoId, hashPreparado};
+                            Log.d(TAG, "PagoId: " + pagoId);
+                            Log.d(TAG, "HashPreparado: " + hashPreparado);
+                            Log.d(TAG, "TimestampPreparacion: " + timestampPreparacion);
+
+                            return new String[]{pagoId, hashPreparado, String.valueOf(timestampPreparacion)};
                         }
 
                         throw new Exception("No hemos encontrado el evento PagoPreparado en el receipt.");

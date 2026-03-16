@@ -247,6 +247,7 @@ public class EscanearPagoActivity extends AppCompatActivity {
 
             String pagoId = resultado[0];
             String hashPreparado = resultado[1];
+            long timestampPreparacion = Long.parseLong(resultado[2]);
 
             runOnUiThread(() -> {
                 tvEstado.setText("PAGO PREPARADO EN BLOCKCHAIN!\n\n" +
@@ -254,7 +255,7 @@ public class EscanearPagoActivity extends AppCompatActivity {
                         "HashPreparado:\n" + hashPreparado.substring(0, 20) + "...\n\n" +
                         "Ahora genera el QR para que el emisor confirme");
 
-                generarQRConfirmacion(pagoId, hashPreparado);
+                generarQRConfirmacion(pagoId, hashPreparado, timestampPreparacion);
             });
 
         } catch (Exception e) {
@@ -271,11 +272,12 @@ public class EscanearPagoActivity extends AppCompatActivity {
         return String.format("%.6f", eth);
     }
 
-    private void generarQRConfirmacion(String pagoId, String hashPreparado){
+    private void generarQRConfirmacion(String pagoId, String hashPreparado, long timestampPreparacion){
         try {
             JSONObject json = new JSONObject();
             json.put("pagoId", pagoId);
             json.put("hashPreparado", hashPreparado);
+            json.put("timestampPreparacion", timestampPreparacion);
 
             String datosQR = json.toString();
 
