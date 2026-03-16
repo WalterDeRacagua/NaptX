@@ -14,6 +14,7 @@ import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.model.Emisor;
 import com.example.offlinepaymentsystem.ui.emisor.EmisorActivity;
 import com.example.offlinepaymentsystem.ui.receptor.EscanearPagoActivity;
+import com.example.offlinepaymentsystem.ui.receptor.ReceptorActivity;
 import com.example.offlinepaymentsystem.ui.test.TestConnectionActivity;
 import com.example.offlinepaymentsystem.ui.test.TestEstadoEmisorActivity;
 import com.example.offlinepaymentsystem.ui.wallet.CrearWalletActivity;
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
     private void onReceiverClicked() {
-        Intent intent = new Intent(this, EscanearPagoActivity.class);
+        Intent intent = new Intent(this, ReceptorActivity.class);
         startActivity(intent);
     }
 

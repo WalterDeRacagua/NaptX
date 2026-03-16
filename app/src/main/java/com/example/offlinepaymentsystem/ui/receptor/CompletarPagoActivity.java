@@ -25,30 +25,34 @@ import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
 import org.json.JSONObject;
+import org.web3j.crypto.Credentials;
 import org.web3j.utils.Numeric;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
-public class CompletarPagoActivity  extends AppCompatActivity {
+public class CompletarPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "CompletarPago";
     private static final String PREFS_NAME = "WalletPrefs";
     private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
+    // UI
     private TextView tvEstado;
     private Button btnEscanear;
-
     private TextView tvDatos;
     private Button btnNuevoEscaneo;
 
+    // Managers
     private WalletManager walletManager;
     private Web3Manager web3Manager;
     private String addressReceptor;
 
+    // Datos del QR #3
     private byte[] pagoId;
     private byte[] hashPreparado;
     private byte[] firmaConfirmacion;
 
+    // Scanner launcher
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(
             new ScanContract(),
             result -> {
@@ -137,7 +141,7 @@ public class CompletarPagoActivity  extends AppCompatActivity {
     private void escanearQR() {
         ScanOptions options = new ScanOptions();
         options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
-        options.setPrompt("Escanea el QR #3 del emisor");
+        options.setPrompt("Escanea el QR 3 del emisor");
         options.setCameraId(0);
         options.setBeepEnabled(true);
         options.setBarcodeImageEnabled(false);
@@ -148,41 +152,32 @@ public class CompletarPagoActivity  extends AppCompatActivity {
 
     private void procesarQR(String contenidoQR) {
         try {
-            Log.d(TAG, "QR 3 escaneado: " + contenidoQR);
+            Log.d(TAG, "QR #3 escaneado: " + contenidoQR);
 
             // Parsear JSON del QR #3
             JSONObject json = new JSONObject(contenidoQR);
 
             pagoId = Numeric.hexStringToByteArray(json.getString("pagoId"));
-            byte[] hashFinal = Numeric.hexStringToByteArray(json.getString("hashFinal"));
+            hashPreparado = Numeric.hexStringToByteArray(json.getString("hashPreparado"));
             firmaConfirmacion = Numeric.hexStringToByteArray(json.getString("firmaConfirmacion"));
 
-            // Calcular hashPreparado = keccak256(hashFinal) (inverso)
-            // NOTA: En realidad necesitamos el hashPreparado original que vino del QR 2
-            // Para simplificar, lo recalculamos o lo guardamos en SharedPreferences
-            // Por ahora, asumimos que podemos extraerlo del pagoId guardado localmente
+            Log.d(TAG, "QR 3 parseado correctamente");
+            Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
+            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
+            Log.d(TAG, "FirmaConfirmacion: " + Numeric.toHexString(firmaConfirmacion));
 
-            // Para esta implementación, necesitamos el hashPreparado original
-            // Lo más simple es que el QR 3 también lo incluya
-            // PERO según el contrato, solo necesita: pagoId, hashPreparado, firmaConfirmacion
-
-            // SOLUCIÓN: El QR 3 debe incluir también hashPreparado
-            // Vamos a modificar esto para que sea correcto
-
-            Log.d(TAG, "ERROR DE DISEÑO: Necesitamos hashPreparado en el QR 3");
-            Log.d(TAG, "El QR 3 debe contener: pagoId, hashPreparado, firmaConfirmacion");
-
-            tvEstado.setText("Error: El QR no contiene hashPreparado\n\n" +
-                    "El emisor debe incluir hashPreparado en el QR 3");
-
-            // TEMPORAL: Mostrar lo que recibimos
-            String datos = "Datos recibidos (INCOMPLETOS):\n\n" +
-                    "PagoId: " + Numeric.toHexString(pagoId).substring(0, 20) + "...\n" +
-                    "HashFinal: " + Numeric.toHexString(hashFinal).substring(0, 20) + "...\n\n" +
-                    "FALTA: hashPreparado";
+            // Mostrar datos
+            String datos = "Confirmación recibida:\n\n" +
+                    "PagoId:\n" + Numeric.toHexString(pagoId).substring(0, 20) + "...\n\n" +
+                    "HashPreparado:\n" + Numeric.toHexString(hashPreparado).substring(0, 20) + "...";
 
             tvDatos.setText(datos);
             tvDatos.setVisibility(View.VISIBLE);
+
+            tvEstado.setText("QR válido\n\n Obteniendo credentials...");
+
+            // Continuar con confirmación
+            obtenerCredentialsYConfirmar();
 
         } catch (Exception e) {
             Log.e(TAG, "Error al procesar QR", e);
@@ -190,17 +185,20 @@ public class CompletarPagoActivity  extends AppCompatActivity {
         }
     }
 
+    /**
+     * Obtiene credentials con biometría y confirma el pago
+     */
     private void obtenerCredentialsYConfirmar() {
-        tvEstado.setText("QR válido\n\n Obteniendo credentials...");
         btnEscanear.setEnabled(false);
 
         walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
             @Override
             public void onCredentialsObtenidos(org.web3j.crypto.Credentials credentials) {
                 runOnUiThread(() -> {
-                    tvEstado.setText("Credentials obtenidos\n\nConfirmando pago en blockchain...");
+                    tvEstado.setText("Credentials obtenidos\n\n Confirmando pago en blockchain...");
                 });
 
+                // Ejecutar en hilo separado
                 new Thread(() -> {
                     enviarConfirmarPago(credentials);
                 }).start();
@@ -216,14 +214,22 @@ public class CompletarPagoActivity  extends AppCompatActivity {
         });
     }
 
-    private void enviarConfirmarPago(org.web3j.crypto.Credentials credentials) {
+    private void enviarConfirmarPago(Credentials credentials) {
         try {
+            Log.d(TAG, "=== CONFIRMAR PAGO EN BLOCKCHAIN ===");
+            Log.d(TAG, "Receptor: " + credentials.getAddress());
+            Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
+            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
+
             String hashFinal = web3Manager.confirmarPago(
                     credentials,
                     pagoId,
                     hashPreparado,
                     firmaConfirmacion
             );
+
+            Log.d(TAG, "Pago confirmado en blockchain");
+            Log.d(TAG, "HashFinal devuelto: " + hashFinal);
 
             runOnUiThread(() -> {
                 tvEstado.setText("¡PAGO COMPLETADO!\n\n" +
@@ -234,7 +240,9 @@ public class CompletarPagoActivity  extends AppCompatActivity {
                 tvDatos.setVisibility(View.GONE);
                 btnNuevoEscaneo.setVisibility(View.VISIBLE);
 
-                Toast.makeText(this, "¡Pago completado!", Toast.LENGTH_LONG).show();
+                Toast.makeText(CompletarPagoActivity.this,
+                        "¡Pago completado!",
+                        Toast.LENGTH_LONG).show();
             });
 
         } catch (Exception e) {

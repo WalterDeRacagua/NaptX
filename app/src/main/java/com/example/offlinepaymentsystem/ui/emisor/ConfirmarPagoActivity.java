@@ -1,6 +1,7 @@
 package com.example.offlinepaymentsystem.ui.emisor;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Build;
@@ -22,6 +23,9 @@ import androidx.core.content.ContextCompat;
 import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.data.local.FirmarMensajeCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
+import com.example.offlinepaymentsystem.data.repository.PagoRepository;
+import com.example.offlinepaymentsystem.data.repository.RepositoryCallback;
+import com.example.offlinepaymentsystem.model.PagoPendiente;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
@@ -31,15 +35,17 @@ import com.journeyapps.barcodescanner.ScanOptions;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
+
+import java.nio.ByteBuffer;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class ConfirmarPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "ConfirmarPago";
-    private static final int CAMERA_PERMISSION_REQUEST_CODE= 100;
+    private static final String PREFS_NAME = "WalletPrefs";
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     private TextView tvEstado;
     private Button btnEscanear;
@@ -49,9 +55,12 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
     private Button btnNuevoEscaneo;
 
     private WalletManager walletManager;
+    private PagoRepository pagoRepository;
 
     private byte[] pagoId;
     private byte[] hashPreparado;
+
+    private PagoPendiente pagoLocal;
 
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(
             new ScanContract(),
@@ -67,39 +76,41 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.setContentView(R.layout.activity_confirmar_pago);
-        this.initViews();
-        this.initData();
-        this.setupListeners();
+        setContentView(R.layout.activity_confirmar_pago);
+
+        initViews();
+        initData();
+        setupListeners();
     }
 
-    private void initViews(){
-        this.tvEstado = findViewById(R.id.tvEstado);
-        this.btnEscanear = findViewById(R.id.btnEscanear);
-        this.tvDatosPago = findViewById(R.id.tvDatosPago);
-        this.layoutQRConfirmacion = findViewById(R.id.layoutQRConfirmacion);
-        this.ivQRConfirmacion = findViewById(R.id.ivQRConfirmacion);
-        this.btnNuevoEscaneo = findViewById(R.id.btnNuevoEscaneo);
+    private void initViews() {
+        tvEstado = findViewById(R.id.tvEstado);
+        btnEscanear = findViewById(R.id.btnEscanear);
+        tvDatosPago = findViewById(R.id.tvDatosPago);
+        layoutQRConfirmacion = findViewById(R.id.layoutQRConfirmacion);
+        ivQRConfirmacion = findViewById(R.id.ivQRConfirmacion);
+        btnNuevoEscaneo = findViewById(R.id.btnNuevoEscaneo);
     }
 
     private void initData() {
-        this.walletManager = new WalletManager(this);
-        tvEstado.setText("Escanea el QR del receptor\n Contiene pagoId + hashPreparado");
+        walletManager = new WalletManager(this);
+        pagoRepository = new PagoRepository(this);
+        tvEstado.setText("Escanea el QR del receptor\nCcontiene pagoId + hashPreparado");
     }
 
-    private void setupListeners(){
-        this.btnEscanear.setOnClickListener(v-> verificarPermisoYEscanear());
-        this.btnNuevoEscaneo.setOnClickListener(v-> reiniciarEscaneo());
+    private void setupListeners() {
+        btnEscanear.setOnClickListener(v -> verificarPermisoYEscanear());
+        btnNuevoEscaneo.setOnClickListener(v -> reiniciarEscaneo());
     }
 
-    private void reiniciarEscaneo(){
-        this.layoutQRConfirmacion.setVisibility(View.GONE);
-        this.tvDatosPago.setVisibility(View.GONE);
-        this.btnEscanear.setEnabled(false);
-        this.tvEstado.setText("Escanea el QR del receptor");
+    private void reiniciarEscaneo() {
+        layoutQRConfirmacion.setVisibility(View.GONE);
+        tvDatosPago.setVisibility(View.GONE);
+        btnEscanear.setEnabled(true);
+        tvEstado.setText("Escanea el QR del receptor");
     }
 
-    private void verificarPermisoYEscanear(){
+    private void verificarPermisoYEscanear() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             escanearQR();
@@ -113,7 +124,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions,int[] grantResults){
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
@@ -140,90 +151,203 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         barcodeLauncher.launch(options);
     }
 
-
-    private void procesarQR(String contenidoQR){
-
+    private void procesarQR(String contenidoQR) {
         try {
-            Log.d(TAG, "QR 2 escaneado: "+ contenidoQR);
+            Log.d(TAG, "QR #2 escaneado: " + contenidoQR);
 
+            // Parsear JSON del QR #2
             JSONObject json = new JSONObject(contenidoQR);
 
-            this.pagoId = Numeric.hexStringToByteArray(json.getString("pagoId"));
-            this.hashPreparado = Numeric.hexStringToByteArray(json.getString("hashPreparado"));
+            pagoId = Numeric.hexStringToByteArray(json.getString("pagoId"));
+            hashPreparado = Numeric.hexStringToByteArray(json.getString("hashPreparado"));
 
+            // Mostrar datos
             String datos = "Datos del pago:\n\n" +
                     "PagoId:\n" + Numeric.toHexString(pagoId).substring(0, 20) + "...\n\n" +
                     "HashPreparado:\n" + Numeric.toHexString(hashPreparado).substring(0, 20) + "...";
 
-            this.tvDatosPago.setText(datos);
-            this.tvDatosPago.setVisibility(View.VISIBLE);
+            tvDatosPago.setText(datos);
+            tvDatosPago.setVisibility(View.VISIBLE);
 
-            this.tvEstado.setText("QR válido\n\nCalculando hashFinal...");
-            this.btnEscanear.setEnabled(false);
+            tvEstado.setText("QR válido\n\n🔍 Buscando pago en BD local...");
+            btnEscanear.setEnabled(false);
 
-            this.calcularHashFinalYFirmar();
+            // Buscar pago en la BD local
+            buscarPagoLocal();
+
         } catch (Exception e) {
             Log.e(TAG, "Error al procesar QR", e);
-            this.tvEstado.setText("Error al procesar QR: " +e.getMessage());
+            tvEstado.setText("Error al procesar QR:\n" + e.getMessage());
         }
     }
 
+    /**
+     * Busca el pago en la base de datos local usando el pagoId
+     */
+    private void buscarPagoLocal() {
+        String pagoIdString = Numeric.toHexString(pagoId);
+
+        pagoRepository.obtenerPagoPorID(pagoIdString, new RepositoryCallback<>() {
+            @Override
+            public void onSuccess(PagoPendiente result) {
+                runOnUiThread(() -> {
+                    if (result == null) {
+                        tvEstado.setText("Error: Pago no encontrado en BD local\n\n" +
+                                "Asegúrate de haber generado este pago en este dispositivo");
+                        btnEscanear.setEnabled(true);
+                        return;
+                    }
+
+                    pagoLocal = result;
+
+                    Log.d(TAG, "Pago encontrado en BD local");
+                    Log.d(TAG, "HashUsado: " + Numeric.toHexString(pagoLocal.getHashUsado()));
+                    Log.d(TAG, "Amount: " + pagoLocal.getAmount());
+                    Log.d(TAG, "Receptor: " + pagoLocal.getReceptor());
+                    Log.d(TAG, "Timestamp: " + pagoLocal.getTimestampPreparacion());
+
+                    tvEstado.setText("Pago encontrado\n\nCalculando hashFinal...");
+
+                    calcularHashFinalYFirmar();
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    tvEstado.setText("Error al buscar pago:\n" + message);
+                    btnEscanear.setEnabled(true);
+                });
+            }
+        });
+    }
+
+    /**
+     * Calcula hashFinal = keccak256(hashUsado, amount, receptor, timestampPreparacion, "confirmado")
+     * IGUAL que el contrato
+     */
     private void calcularHashFinalYFirmar() {
         try {
-            // Calcular hashFinal = keccak256(hashPreparado)
-            byte[] hashFinal = Hash.sha3(hashPreparado);
+            // Extraer datos del pago local
+            byte[] hashUsado = pagoLocal.getHashUsado();
+            long amount = pagoLocal.getAmount();
+            String receptor = pagoLocal.getReceptor();
+            long timestamp = pagoLocal.getTimestampPreparacion();
+
+            // Convertir amount a bytes32
+            byte[] amountBytes = new byte[32];
+            for (int i = 0; i < 8; i++) {
+                amountBytes[31 - i] = (byte) (amount >> (i * 8));
+            }
+
+            // Convertir receptor a bytes (sin 0x)
+            byte[] receptorBytes = Numeric.hexStringToByteArray(receptor);
+
+            // Convertir timestamp a bytes32
+            byte[] timestampBytes = new byte[32];
+            for (int i = 0; i < 8; i++) {
+                timestampBytes[31 - i] = (byte) (timestamp >> (i * 8));
+            }
+
+            // Palabra "confirmado"
+            byte[] palabraConfirmado = "confirmado".getBytes();
+
+            // Concatenar: hashUsado + amount + receptor + timestamp + "confirmado"
+            byte[] mensaje = new byte[hashUsado.length + amountBytes.length +
+                    receptorBytes.length + timestampBytes.length +
+                    palabraConfirmado.length];
+
+            int offset = 0;
+            System.arraycopy(hashUsado, 0, mensaje, offset, hashUsado.length);
+            offset += hashUsado.length;
+
+            System.arraycopy(amountBytes, 0, mensaje, offset, amountBytes.length);
+            offset += amountBytes.length;
+
+            System.arraycopy(receptorBytes, 0, mensaje, offset, receptorBytes.length);
+            offset += receptorBytes.length;
+
+            System.arraycopy(timestampBytes, 0, mensaje, offset, timestampBytes.length);
+            offset += timestampBytes.length;
+
+            System.arraycopy(palabraConfirmado, 0, mensaje, offset, palabraConfirmado.length);
+
+            // Calcular hashFinal = keccak256(mensaje)
+            byte[] hashFinal = Hash.sha3(mensaje);
 
             Log.d(TAG, "=== CALCULAR HASH FINAL (OFFLINE) ===");
-            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
+            Log.d(TAG, "HashUsado: " + Numeric.toHexString(hashUsado));
+            Log.d(TAG, "Amount: " + amount + " (" + Numeric.toHexString(amountBytes) + ")");
+            Log.d(TAG, "Receptor: " + receptor);
+            Log.d(TAG, "Timestamp: " + timestamp + " (" + Numeric.toHexString(timestampBytes) + ")");
+            Log.d(TAG, "Mensaje concatenado: " + Numeric.toHexString(mensaje));
             Log.d(TAG, "HashFinal: " + Numeric.toHexString(hashFinal));
 
-            tvEstado.setText("HashFinal calculado\n\n Firmando confirmación...");
+            tvEstado.setText("HashFinal calculado\n\nFirmando confirmación...");
 
             // Firmar mensaje de confirmación con biometría
             firmarConfirmacion(hashFinal);
 
         } catch (Exception e) {
             Log.e(TAG, "Error al calcular hashFinal", e);
-            tvEstado.setText("❌ Error al calcular hashFinal:\n" + e.getMessage());
+            tvEstado.setText("Error al calcular hashFinal:\n" + e.getMessage());
             btnEscanear.setEnabled(true);
         }
     }
 
-    private void firmarConfirmacion(byte[] hashFinal){
-        this.walletManager.firmarConfirmacionPago(
-                this.pagoId,
-                this.hashPreparado,
+    /**
+     * Firma el mensaje de confirmación OFFLINE con biometría
+     */
+    private void firmarConfirmacion(byte[] hashFinal) {
+        walletManager.firmarConfirmacionPago(
+                pagoId,
+                hashPreparado,
                 new FirmarMensajeCallback() {
                     @Override
                     public void onMensajeFirmado(byte[] firmaConfirmacion) {
-                        runOnUiThread(()->{
-                            tvEstado.setText("Confirmación firmada \n\n Generando QR 3");
+                        runOnUiThread(() -> {
+                            tvEstado.setText("Confirmación firmada\n\nGenerando QR 3...");
                             generarQRConfirmacion(hashFinal, firmaConfirmacion);
                         });
                     }
 
                     @Override
                     public void onError(String mensaje) {
-                        runOnUiThread(()->{
-                            tvEstado.setText("Error al firmar: \n\n" +mensaje);
-                            btnEscanear.setEnabled(false);
+                        runOnUiThread(() -> {
+                            tvEstado.setText("Error al firmar:\n" + mensaje);
+                            btnEscanear.setEnabled(true);
                         });
                     }
                 }
         );
     }
 
+    /**
+     * Genera QR #3 con pagoId + hashPreparado + firmaConfirmacion
+     * NO incluye hashFinal (el contrato lo calcula)
+     * Pero GUARDA hashFinal como próximo hashUsado
+     */
     private void generarQRConfirmacion(byte[] hashFinal, byte[] firmaConfirmacion) {
         try {
-            // Crear JSON con los datos para el QR #3
+            // PASO 1: Guardar hashFinal como próximo hashUsado
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit()
+                    .putString("HASH_ACTUAL", Numeric.toHexString(hashFinal))
+                    .apply();
+
+            Log.d(TAG, "HashFinal guardado como próximo hashUsado: " +
+                    Numeric.toHexString(hashFinal));
+
+            // PASO 2: Crear QR #3 SIN hashFinal
             JSONObject json = new JSONObject();
             json.put("pagoId", Numeric.toHexString(pagoId));
-            json.put("hashFinal", Numeric.toHexString(hashFinal));
+            json.put("hashPreparado", Numeric.toHexString(hashPreparado));
             json.put("firmaConfirmacion", Numeric.toHexString(firmaConfirmacion));
+            // NO incluir hashFinal en el QR
 
             String datosQR = json.toString();
 
-            Log.d(TAG, "=== QR #3 GENERADO ===");
+            Log.d(TAG, "=== QR 3 GENERADO ===");
             Log.d(TAG, "JSON: " + datosQR);
 
             // Generar bitmap del QR
@@ -235,7 +359,8 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
 
             tvEstado.setText("CONFIRMACIÓN FIRMADA (OFFLINE)\n\n" +
                     "Muestra este QR al receptor\n" +
-                    "para completar el pago");
+                    "para completar el pago\n\n" +
+                    "HashFinal guardado para próximo pago");
             btnEscanear.setEnabled(false);
 
         } catch (JSONException | WriterException e) {
@@ -245,6 +370,9 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Convierte un string en una imagen de código QR
+     */
     private Bitmap generarQRBitmap(String content, int width, int height) throws WriterException {
         QRCodeWriter writer = new QRCodeWriter();
         BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);
@@ -259,6 +387,4 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         }
         return bitmap;
     }
-
 }
-
