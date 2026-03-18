@@ -18,6 +18,7 @@ import com.example.offlinepaymentsystem.data.local.FirmarMensajeCallback;
 import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
 import com.example.offlinepaymentsystem.model.Emisor;
+import com.example.offlinepaymentsystem.utils.Constants;
 
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Numeric;
@@ -28,8 +29,6 @@ import java.util.Random;
 public class RegistrarEmisorActivity extends AppCompatActivity {
 
     private static final String TAG = "RegistrarEmisor";
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
 
     private WalletManager walletManager;
     private Web3Manager web3Manager;
@@ -57,11 +56,11 @@ public class RegistrarEmisorActivity extends AppCompatActivity {
         this.tvEstado = findViewById(R.id.tvEstado);
         this.btnRegistrar = findViewById(R.id.btnRegistrar);
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         walletManager = new WalletManager(this);
         this.web3Manager = new Web3Manager(this);
 
-        address = prefs.getString(KEY_WALLET_ADDRESS, null);
+        address = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
 
         if (address == null){
             tvEstado.setText("Error: no hay ninguna wallet creada");

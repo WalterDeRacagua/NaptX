@@ -14,7 +14,6 @@ import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
-import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -27,13 +26,14 @@ import java.util.Collections;
 import java.util.List;
 
 import android.content.Context;
-import android.nfc.Tag;
 import android.util.Log;
 
 import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.CryptoConstants;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
+import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
@@ -52,9 +52,8 @@ import okhttp3.OkHttpClient;
 public class Web3Manager {
 
     private static final String TAG = "Web3Manager";
-    private static  Web3Manager instance;
     private Web3j web3j;
-    private Context context;
+    private final Context context;
     private String contractABI;
 
     public Web3Manager(Context context) {
@@ -140,7 +139,7 @@ public class Web3Manager {
         try {
             Function function = new Function(
                     "obtenerEstadoEmisor",
-                    Arrays.asList(new Address(addressEmisor)),  // address
+                    List.of(new Address(addressEmisor)),  // address
                     Arrays.asList(
                             new TypeReference<Bytes32>() {},      // hashActual
                             new TypeReference<Bool>() {},         // registrado
@@ -213,12 +212,7 @@ public class Web3Manager {
             byte[] firma
     ) {
         try {
-            Log.d(TAG, "=== INICIANDO REGISTRO ===");
-            Log.d(TAG, "Address: " + credentials.getAddress());
-            Log.d(TAG, "DeviceId: " + Numeric.toHexString(deviceId));
-            Log.d(TAG, "Timestamp: " + timestamp);
-            Log.d(TAG, "Nonce: " + nonce);
-            Log.d(TAG, "Firma: " + Numeric.toHexString(firma));
+            Log.d(TAG, "Registrar emisor: " + credentials.getAddress());
 
             // 1. Crear Function para registrar
             Function function = new Function(
@@ -251,7 +245,7 @@ public class Web3Manager {
             Log.d(TAG, "Gas price: " + gasPrice);
 
             // 5. Estimar gas limit
-            BigInteger gasLimit = BigInteger.valueOf(300000);
+            BigInteger gasLimit = BigInteger.valueOf(CryptoConstants.GAS_LIMIT_REGISTER);
 
             // 6. Crear RawTransaction
             RawTransaction rawTransaction = RawTransaction.createTransaction(
@@ -265,7 +259,7 @@ public class Web3Manager {
             // 7. Firmar transacción
             byte[] signedMessage = TransactionEncoder.signMessage(
                     rawTransaction,
-                    11155111,  // Chain ID de Sepolia
+                    CryptoConstants.SEPOLIA_CHAIN_ID,
                     credentials
             );
             String hexValue = Numeric.toHexString(signedMessage);
@@ -306,7 +300,7 @@ public class Web3Manager {
 
         // Esperar hasta 60 segundos
         int intentos = 0;
-        int maxIntentos = 30; // 30 intentos x 2 segundos = 60 segundos
+        int maxIntentos = CryptoConstants.MAX_INTENTOS_RECEIPT; // 30 intentos x 2 segundos = 60 segundos
 
         while (intentos < maxIntentos) {
             try {
@@ -332,9 +326,7 @@ public class Web3Manager {
                         String eventSignature = log.getTopics().get(0);
 
                         // Hash del evento: keccak256("EmisorRegistrado(address,bytes32,bytes32,uint256)")
-                        String expectedEventHash = Hash.sha3String(
-                                "EmisorRegistrado(address,bytes32,bytes32,uint256)"
-                        );
+                        String expectedEventHash = Hash.sha3String(CryptoConstants.EVENT_EMISOR_REGISTRADO);
 
                         Log.d(TAG, "Event signature encontrado: " + eventSignature);
                         Log.d(TAG, "Event signature esperado: " + expectedEventHash);
@@ -375,7 +367,7 @@ public class Web3Manager {
                 }
 
                 Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
-                Thread.sleep(2000);
+                Thread.sleep(CryptoConstants.DELAY_ENTRE_INTENTOS_MS);
                 intentos++;
 
             } catch (InterruptedException e) {
@@ -395,18 +387,7 @@ public class Web3Manager {
             long nonce,
             byte [] firma
     ) throws Exception{
-        // === DEBUG LOGS ===
-        Log.d(TAG, "=== ENVIAR CONFIGURAR WHITELIST ===");
-        Log.d(TAG, "Credentials address: " + credentials.getAddress());
-        Log.d(TAG, "Número de receptores: " + receptores.length);
-        for (int i = 0; i < receptores.length; i++) {
-            Log.d(TAG, "Receptor[" + i + "]: " + receptores[i]);
-            Log.d(TAG, "Límite[" + i + "]: " + limites[i]);
-        }
-        Log.d(TAG, "Timestamp: " + timestamp);
-        Log.d(TAG, "Nonce: " + nonce);
-        Log.d(TAG, "Firma (hex): " + Numeric.toHexString(firma));
-        Log.d(TAG, "Firma length: " + firma.length + " bytes");
+        Log.d(TAG, "Configurar whitelist: " + receptores.length + " receptores");
         List<org.web3j.abi.datatypes.Address> receptoresList = new ArrayList<>();
         for (String receptor: receptores) {
             receptoresList.add(new Address(receptor));
@@ -442,14 +423,14 @@ public class Web3Manager {
         RawTransaction rawTransaction = RawTransaction.createTransaction(
                 txNonce,
                 gasPrice,
-                BigInteger.valueOf(500000), //Mayor limit para arrays
+                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_WHITELIST), //Mayor limit para arrays
                 Constants.CONTRACT_ADDRESS,
                 encodedFunction
         );
 
         byte [] signedMessage = TransactionEncoder.signMessage(
                 rawTransaction,
-                11155111,
+                CryptoConstants.SEPOLIA_CHAIN_ID,
                 credentials
         );
 
@@ -471,9 +452,7 @@ public class Web3Manager {
             org.web3j.crypto.Credentials credentials,
             long amount
     ) throws Exception {
-
-        Log.d(TAG, ">>> aprobarTokens() iniciado");
-        Log.d(TAG, ">>> Amount a aprobar: " + amount);
+        Log.d(TAG, "Aprobar tokens: " + amount);
 
         // Función approve(address spender, uint256 amount)
         Function function = new Function(
@@ -503,7 +482,7 @@ public class Web3Manager {
         RawTransaction rawTransaction = RawTransaction.createTransaction(
                 txNonce,
                 gasPrice,
-                BigInteger.valueOf(100000),  // Gas limit para approve
+                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_APPROVE),  // Gas limit para approve
                 Constants.CONTRACT_ADDRESS,
                 encodedFunction
         );
@@ -511,7 +490,7 @@ public class Web3Manager {
         // Firmar transacción
         byte[] signedMessage = TransactionEncoder.signMessage(
                 rawTransaction,
-                11155111,  // Chain ID de Sepolia
+                CryptoConstants.SEPOLIA_CHAIN_ID,
                 credentials
         );
         String hexValue = Numeric.toHexString(signedMessage);
@@ -537,14 +516,8 @@ public class Web3Manager {
      * Prepara un pago en la Blockchain (llamado por el RECEPTOR)
      * */
     public String[] prepararPago(Credentials credentials, byte[] hashUsado, long amount, String receptor, long timestamp, long nonce, byte[] deviceId, byte[]firma) throws Exception {
-        Log.d(TAG, "=== PREPARAR PAGO ===");
-        Log.d(TAG, "HashUsado: " + Numeric.toHexString(hashUsado));
-        Log.d(TAG, "Amount: " + amount);
-        Log.d(TAG, "Receptor: " + receptor);
-        Log.d(TAG, "Timestamp: " + timestamp);
-        Log.d(TAG, "Nonce: " + nonce);
-        Log.d(TAG, "DeviceId: " + Numeric.toHexString(deviceId));
-        Log.d(TAG, "Firma: " + Numeric.toHexString(firma));
+
+        Log.d(TAG, "Preparar pago: " + amount + " a " + receptor);
 
         //Preparamos la función que se va a lanzar a la blockchain
         Function function = new Function(
@@ -575,13 +548,13 @@ public class Web3Manager {
         RawTransaction rawTransaction = RawTransaction.createTransaction(
                 txNonce,
                 gasPrice,
-                BigInteger.valueOf(500000),
+                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_PREPARAR_PAGO),
                 Constants.CONTRACT_ADDRESS,
                 encodedFunction
         );
         byte[] signedMessage = TransactionEncoder.signMessage(
                 rawTransaction,
-                11155111,
+                CryptoConstants.SEPOLIA_CHAIN_ID,
                 credentials
         );
         String hexValue = Numeric.toHexString(signedMessage);
@@ -611,7 +584,7 @@ public class Web3Manager {
         Log.d(TAG, ">>> Esperando la receipt de la transacción: " + txHas);
 
         int intentos =0;
-        int maxIntentos= 60;
+        int maxIntentos= CryptoConstants.MAX_INTENTOS_RECEIPT;
 
         while (intentos < maxIntentos){
             try{
@@ -629,9 +602,7 @@ public class Web3Manager {
 
                         String eventSignature = log.getTopics().get(0);
 
-                        String expectedEventHash = Hash.sha3String(
-                                "PagoPreparado(bytes32,address,address,uint256,bytes32,uint256)"
-                        );
+                        String expectedEventHash = Hash.sha3String(CryptoConstants.EVENT_PAGO_PREPARADO);
 
                         Log.d(TAG, "Event signature encontrado: " + eventSignature);
                         Log.d(TAG, "Event signature esperadp: " + expectedEventHash);
@@ -673,7 +644,7 @@ public class Web3Manager {
                     }
 
                     Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
-                    Thread.sleep(2000);
+                    Thread.sleep(CryptoConstants.DELAY_ENTRE_INTENTOS_MS);
                     intentos++;
                 }
             } catch (InterruptedException e) {
@@ -685,10 +656,7 @@ public class Web3Manager {
     }
 
     public String confirmarPago(Credentials credentials, byte[] pagoId, byte[] hashPreparado, byte[] firmaConfirmacion) throws  Exception {
-        Log.d(TAG, "=== CONFIRMAR PAGO ===");
-        Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
-        Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
-        Log.d(TAG, "FirmaConfirmacion: " + Numeric.toHexString(firmaConfirmacion));
+        Log.d(TAG, "Confirmar pago: " + Numeric.toHexString(pagoId));
 
         Function function = new Function(
                 "confirmarPago",
@@ -713,14 +681,14 @@ public class Web3Manager {
         RawTransaction rawTransaction = RawTransaction.createTransaction(
                 txNonce,
                 gasPrice,
-                BigInteger.valueOf(500000),
+                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_CONFIRMAR_PAGO),
                 Constants.CONTRACT_ADDRESS,
                 encodedFunction
         );
 
         byte[] signedMessage = TransactionEncoder.signMessage(
                 rawTransaction,
-                11155111,
+                CryptoConstants.SEPOLIA_CHAIN_ID,
                 credentials
         );
         String hexValue = Numeric.toHexString(signedMessage);
@@ -745,7 +713,7 @@ public class Web3Manager {
         Log.d(TAG, ">>> Esperando receipt de transacción: " + txHash);
 
         int intentos = 0;
-        int maxIntentos = 60; // 60 x 2s = 120 segundos
+        int maxIntentos = CryptoConstants.MAX_INTENTOS_RECEIPT; // 60 x 2s = 120 segundos
 
         while (intentos < maxIntentos) {
             try {
@@ -773,9 +741,7 @@ public class Web3Manager {
                         String eventSignature = log.getTopics().get(0);
 
                         // Hash del evento PagoConfirmado
-                        String expectedEventHash = org.web3j.crypto.Hash.sha3String(
-                                "PagoConfirmado(bytes32,address,address,uint256,bytes32,uint256)"
-                        );
+                        String expectedEventHash = org.web3j.crypto.Hash.sha3String(CryptoConstants.EVENT_PAGO_CONFIRMADO);
 
                         Log.d(TAG, "Event signature encontrado: " + eventSignature);
                         Log.d(TAG, "Event signature esperado: " + expectedEventHash);
@@ -811,7 +777,7 @@ public class Web3Manager {
                 }
 
                 Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
-                Thread.sleep(2000);
+                Thread.sleep(CryptoConstants.DELAY_ENTRE_INTENTOS_MS);
                 intentos++;
 
             } catch (InterruptedException e) {
@@ -821,6 +787,55 @@ public class Web3Manager {
         }
 
         throw new Exception("Timeout: No se recibió el receipt en 120 segundos");
+    }
+
+    public long obtenerBalanceNPTX(String address) throws Exception {
+        Function function = new Function(
+                "balanceOf",
+                List.of(new Address(address)),
+                List.of(new TypeReference<Uint256>() {
+                })
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        Transaction transaction = Transaction.createEthCallTransaction(
+                null,
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+
+        EthCall response = web3j.ethCall(
+                transaction,
+                DefaultBlockParameterName.LATEST
+        ).send();
+
+        if (response.hasError()){
+            throw new Exception("Error a la hora de obtener el balance: " + response.getError().getMessage());
+        }
+
+        List<Type> results = FunctionReturnDecoder.decode(
+                response.getValue(),
+                function.getOutputParameters()
+        );
+
+        BigInteger balance = (BigInteger) results.get(0).getValue();
+
+        //Devuelvo el balance pero en weis.
+        return balance.longValue();
+    }
+
+    public long obtenerBalanceETH(String address) throws Exception {
+
+        EthGetBalance balance = this.web3j.ethGetBalance(address, DefaultBlockParameterName.LATEST).send();
+
+        if (balance.hasError()) {
+            throw new Exception("Error: " + balance.getError().getMessage());
+        }
+
+        BigInteger balanceWei = balance.getBalance();
+
+        return balanceWei.longValue();
     }
 }
 

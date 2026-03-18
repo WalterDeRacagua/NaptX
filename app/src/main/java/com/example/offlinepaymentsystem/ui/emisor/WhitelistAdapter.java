@@ -9,14 +9,14 @@ import android.widget.TextView;
 
 import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.model.WhitelistItem;
+import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 
 public class WhitelistAdapter extends BaseAdapter {
 
-    private Context context;
+    private final Context context;
     private List<WhitelistItem> items;
 
     public WhitelistAdapter(Context context, List<WhitelistItem> items){
@@ -70,15 +70,12 @@ public class WhitelistAdapter extends BaseAdapter {
             tvNombre.setText(nombre);
         }
 
-        String direccion = item.getDireccion();
-        if (direccion.length() > 20){
-            direccion = direccion.substring(0,10) + "..." +direccion.substring(direccion.length() -8);
-        }
+        String direccion = CryptoUtils.acortarAddressLargo(item.getDireccion());
 
         tvDireccion.setText(direccion);
 
         long limiteWei = item.getLimite();
-        BigDecimal limiteETH = new BigDecimal(limiteWei).divide(new BigDecimal("1000000000000000000"));
+        BigDecimal limiteETH = CryptoUtils.convertirWeiAETHBigDecimal(limiteWei);
         tvLimite.setText("Límite: " + limiteETH.toPlainString()+ "ETH");
         return view;
     }

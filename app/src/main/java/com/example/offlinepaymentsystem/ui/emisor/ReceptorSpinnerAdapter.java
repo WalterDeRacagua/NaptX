@@ -12,14 +12,15 @@ import androidx.annotation.Nullable;
 
 import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.model.WhitelistItem;
+import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class ReceptorSpinnerAdapter extends ArrayAdapter<WhitelistItem> {
 
-    private Context context;
-    private List<WhitelistItem> receptores;
+    private final Context context;
+    private final List<WhitelistItem> receptores;
 
     public ReceptorSpinnerAdapter(Context context, List<WhitelistItem> receptores) {
         super(context, 0, receptores);
@@ -58,8 +59,7 @@ public class ReceptorSpinnerAdapter extends ArrayAdapter<WhitelistItem> {
         }
 
         long limiteWei = item.getLimite();
-        BigDecimal limiteETH = new BigDecimal(limiteWei)
-                .divide(new BigDecimal("1000000000000000000"));
+        BigDecimal limiteETH = CryptoUtils.convertirWeiAETHBigDecimal(limiteWei);
 
         String texto = nombre + " - Límite: " + limiteETH.toPlainString() + " ETH";
         textView.setText(texto);

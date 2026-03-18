@@ -77,46 +77,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="16dp"/>
 
-        <!-- Botón Sincronizar -->
-        <Button
-            android:id="@+id/btnSincronizar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="@string/sincronizar_con_blockchain"
-            android:textSize="18sp"
-            android:paddingVertical="16dp"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            app:layout_constraintTop_toBottomOf="@id/btnReceptor"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="16dp"/>
-
-        <Button
-            android:id="@+id/btnTestWeb3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="@string/probar_web3manager"
-            android:textSize="18sp"
-            android:paddingVertical="16dp"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            app:layout_constraintTop_toBottomOf="@id/btnSincronizar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="16dp"/>
-
-        <Button
-            android:id="@+id/btnTestEstadoEmisor"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Consultar Estado Emisor"
-            android:textSize="18sp"
-            android:paddingVertical="16dp"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            app:layout_constraintTop_toBottomOf="@id/btnTestWeb3"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="16dp"/>
-
         <Button
             android:id="@+id/btnCrearWallet"
             android:layout_width="0dp"
@@ -125,10 +85,24 @@
             android:textSize="18sp"
             android:paddingVertical="16dp"
             style="@style/Widget.Material3.Button"
-            app:layout_constraintTop_toBottomOf="@id/btnTestEstadoEmisor"
+            app:layout_constraintTop_toBottomOf="@id/btnReceptor"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnVerEstado"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Ver Estado"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            app:layout_constraintTop_toBottomOf="@id/btnCrearWallet"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"/>
+
 
         <TextView
             android:id="@+id/tvEstadoConexion"
@@ -137,7 +111,7 @@
             android:text="@string/desconectado"
             android:textSize="14sp"
             android:textColor="@color/status_disconnected"
-            app:layout_constraintTop_toBottomOf="@id/btnCrearWallet"
+            app:layout_constraintTop_toBottomOf="@id/btnVerEstado"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="32dp"

@@ -7,7 +7,6 @@ import com.example.offlinepaymentsystem.data.local.PagoPendienteDao;
 import com.example.offlinepaymentsystem.model.PagoPendiente;
 
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

@@ -31,12 +31,13 @@ import com.example.offlinepaymentsystem.data.repository.PagoRepository;
 import com.example.offlinepaymentsystem.data.repository.WhitelistRepository;
 import com.example.offlinepaymentsystem.model.PagoPendiente;
 import com.example.offlinepaymentsystem.model.WhitelistItem;
+import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.QRCodeHelper;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.web3j.utils.Numeric;
 
@@ -48,9 +49,6 @@ import java.util.UUID;
 public class GenerarPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "GenerarPagoActivity";
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
-
     //UI
     private TextView tvEmisorAddress;
     private Spinner spinnerReceptor;
@@ -102,8 +100,8 @@ public class GenerarPagoActivity extends AppCompatActivity {
 
     private void initData() {
         // Obtener address del emisor
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        addressEmisor = prefs.getString(KEY_WALLET_ADDRESS, null);
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        addressEmisor = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
 
         if (addressEmisor == null) {
             btnGenerarPago.setEnabled(false);
@@ -295,7 +293,7 @@ public class GenerarPagoActivity extends AppCompatActivity {
     }
 
     private byte[] obtenerHashUsado() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         String hashActualHex = prefs.getString("HASH_ACTUAL", null);
 
         if (hashActualHex == null) {
@@ -359,7 +357,7 @@ public class GenerarPagoActivity extends AppCompatActivity {
             datosQR = json.toString();
 
             // Generar QR
-            Bitmap qrBitmap = generarQRBitmap(datosQR, 512, 512);
+            Bitmap qrBitmap = QRCodeHelper.generarQRBitmap(datosQR, 512, 512);
 
             // Mostrar QR
             ivQRCode.setImageBitmap(qrBitmap);
@@ -371,19 +369,6 @@ public class GenerarPagoActivity extends AppCompatActivity {
             tvEstado.setText("Error al generar el QR"+ e.getMessage());
             btnGenerarPago.setEnabled(false);
         }
-    }
-
-    private Bitmap generarQRBitmap(String content, int width, int height) throws WriterException {
-        QRCodeWriter writer = new QRCodeWriter();
-        BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                bitmap.setPixel(x, y, bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
-            }
-        }
-        return bitmap;
     }
 
     private void copiarDatosQR() {

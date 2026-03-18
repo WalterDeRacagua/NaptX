@@ -1,6 +1,7 @@
 package com.example.offlinepaymentsystem.ui.emisor;
 
 import android.Manifest;
+import android.app.usage.ConfigurationStats;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -25,7 +26,10 @@ import com.example.offlinepaymentsystem.data.local.FirmarMensajeCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
 import com.example.offlinepaymentsystem.data.repository.PagoRepository;
 import com.example.offlinepaymentsystem.data.repository.RepositoryCallback;
+import com.example.offlinepaymentsystem.data.repository.WhitelistRepository;
 import com.example.offlinepaymentsystem.model.PagoPendiente;
+import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.QRCodeHelper;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
@@ -38,7 +42,6 @@ import org.json.JSONObject;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,7 +49,6 @@ import java.util.List;
 public class ConfirmarPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "ConfirmarPago";
-    private static final String PREFS_NAME = "WalletPrefs";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     private TextView tvEstado;
@@ -164,7 +166,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             hashPreparado = Numeric.hexStringToByteArray(json.getString("hashPreparado"));
             long timestampPreparacion = json.getLong("timestampPreparacion");
 
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
             prefs.edit().putLong("TIMESTAMP_PREPARACION", timestampPreparacion).apply();
 
             // Mostrar datos
@@ -175,10 +177,9 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             tvDatosPago.setText(datos);
             tvDatosPago.setVisibility(View.VISIBLE);
 
-            tvEstado.setText("QR válido\n\n🔍 Buscando pago en BD local...");
+            tvEstado.setText("QR válido\n\n Buscando pago en BD local...");
             btnEscanear.setEnabled(false);
 
-            // Buscar pago en la BD local
             buscarPagoLocal();
 
         } catch (Exception e) {
@@ -262,7 +263,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             byte[] hashUsado = pagoLocal.getHashUsado();
             long amount = pagoLocal.getAmount();
             String receptor = pagoLocal.getReceptor();
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
             long timestamp = prefs.getLong("TIMESTAMP_PREPARACION", 0);
 
             if (timestamp == 0) {
@@ -359,13 +360,15 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
     private void generarQRConfirmacion(byte[] hashFinal, byte[] firmaConfirmacion) {
         try {
             // PASO 1: Guardar hashFinal como próximo hashUsado
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
             prefs.edit()
                     .putString("HASH_ACTUAL", Numeric.toHexString(hashFinal))
                     .apply();
 
             Log.d(TAG, "HashFinal guardado como próximo hashUsado: " +
                     Numeric.toHexString(hashFinal));
+
+            decrementarLimiteWhitelist();
 
             // PASO 2: Crear QR #3 SIN hashFinal
             JSONObject json = new JSONObject();
@@ -380,7 +383,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             Log.d(TAG, "JSON: " + datosQR);
 
             // Generar bitmap del QR
-            Bitmap qrBitmap = generarQRBitmap(datosQR, 512, 512);
+            Bitmap qrBitmap = QRCodeHelper.generarQRBitmap(datosQR, 512, 512);
 
             // Mostrar QR
             ivQRConfirmacion.setImageBitmap(qrBitmap);
@@ -399,18 +402,23 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
         }
     }
 
-    private Bitmap generarQRBitmap(String content, int width, int height) throws WriterException {
-        QRCodeWriter writer = new QRCodeWriter();
-        BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);
+    private void decrementarLimiteWhitelist() {
+        // Obtener datos del pago
+        String receptorAddress = pagoLocal.getReceptor();
+        long amount = pagoLocal.getAmount();
 
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                bitmap.setPixel(x, y,
-                        bitMatrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF
-                );
+        WhitelistRepository whitelistRepo = new WhitelistRepository(this);
+
+        whitelistRepo.decrementarLimite(receptorAddress, amount, new RepositoryCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d(TAG, "Límite de whitelist decrementado correctamente");
             }
-        }
-        return bitmap;
+
+            @Override
+            public void onError(String message) {
+                Log.e(TAG, "Error al decrementar límite: " + message);
+            }
+        });
     }
 }

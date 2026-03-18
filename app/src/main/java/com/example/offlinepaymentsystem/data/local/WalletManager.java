@@ -12,30 +12,18 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 
-import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.DynamicArray;
-import org.web3j.abi.datatypes.DynamicBytes;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
-import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.utils.Numeric;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.math.BigInteger;
 import java.security.KeyStore;
 import java.security.Security;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -56,7 +44,7 @@ public class WalletManager {
     //TAG de autenticación que verifica que el cifrado no fue manipulado
     private static final int GCM_TAG_LENGTH =128;
 
-    private Context context;
+    private final Context context;
     private KeyStore keyStore;
 
     public WalletManager(Context context){

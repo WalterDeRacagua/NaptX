@@ -2,9 +2,6 @@ package com.example.offlinepaymentsystem.model;
 
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Es el receptor al uso, no el de la whitelist desdeel punto de vista del emisor
- */
 public class Receptor {
     private String address;
     private String nombre;

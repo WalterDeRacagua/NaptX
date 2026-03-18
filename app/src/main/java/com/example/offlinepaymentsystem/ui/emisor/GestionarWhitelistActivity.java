@@ -1,6 +1,6 @@
 package com.example.offlinepaymentsystem.ui.emisor;
 
-import android.app.Dialog;
+
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,6 +25,8 @@ import com.example.offlinepaymentsystem.data.local.WalletManager;
 import com.example.offlinepaymentsystem.data.repository.RepositoryCallback;
 import com.example.offlinepaymentsystem.data.repository.WhitelistRepository;
 import com.example.offlinepaymentsystem.model.WhitelistItem;
+import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -34,8 +36,6 @@ import java.util.List;
 public class GestionarWhitelistActivity extends AppCompatActivity {
 
     private static final String TAG = "GestionarWhitelist";
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS="WALLET_ADDRESS";
 
     //UI
     private ListView lvReceptores;
@@ -83,8 +83,8 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         this.walletManager = new WalletManager(this);
         this.web3Manager = new Web3Manager(this);
 
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        this.addressEmisor = prefs.getString(KEY_WALLET_ADDRESS, null);
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        this.addressEmisor = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.P)
@@ -148,8 +148,7 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
             }
 
             double limiteETH = Double.parseDouble(limiteStr);
-            BigDecimal limiteWeiDecimal = new BigDecimal(limiteETH).multiply(new BigDecimal("1000000000000000000"));
-            long limiteWEI = limiteWeiDecimal.longValue();
+            long limiteWEI = CryptoUtils.convertirETHaWei(limiteETH);
 
             WhitelistItem item = new WhitelistItem(direccion,nombre,limiteWEI);
 

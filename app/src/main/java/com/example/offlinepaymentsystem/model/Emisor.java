@@ -5,9 +5,7 @@ import androidx.annotation.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Representa a nuestro pagador semi-offline.
- */
+
 public class Emisor {
 
     private String walletAddress;           // Address Ethereum

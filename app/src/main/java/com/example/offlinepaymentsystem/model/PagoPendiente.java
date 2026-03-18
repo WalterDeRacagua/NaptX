@@ -27,7 +27,7 @@ public class PagoPendiente {
      * FALLIDO: Error en el procesamiento
      */
 
-    public enum Estado {PREPARADO, CONFIRMADO, REVERTIDO, FALLIDO};
+    public enum Estado {PREPARADO, CONFIRMADO, REVERTIDO, FALLIDO}
 
     // =================== CAMPOS DE LA BASE DATOS ===================
 

@@ -4,10 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-/***
- * Representa un receptor en la whitelist del emisor
- * Cada entrada define cuánto puede gastar este emisor con este receptor
- */
+
 @Entity(tableName = "whitelist")
 public class WhitelistItem {
     @PrimaryKey

@@ -76,4 +76,32 @@ public class WhitelistRepository {
         });
     }
 
+    public void decrementarLimite(String direccion, long amountPagado, RepositoryCallback<Void> callback){
+
+            new Thread(()->{
+                try {
+                    WhitelistItem item = this.dao.obtenerPorDireccion(direccion);
+
+                    if (item == null){
+                        callback.onError("El receptor no se ha encontrado en la whitelist.");
+                        return;
+                    }
+
+                    long nuevoLimite = item.getLimite() - amountPagado;
+
+                    if (nuevoLimite < 0){
+                        nuevoLimite =0;
+                    }
+
+                    item.setLimite(nuevoLimite);
+
+                    this.dao.actualizar(item);
+
+                    callback.onSuccess(null);
+                } catch (Exception e) {
+                    callback.onError(e.getMessage());
+                }
+            }).start();
+    }
+
 }

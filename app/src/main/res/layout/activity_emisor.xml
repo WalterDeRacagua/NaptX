@@ -79,16 +79,5 @@
             android:textSize="16sp"
             android:padding="16dp"
             android:layout_marginBottom="16dp"/>
-
-        <!-- Botón Ver Estado -->
-        <Button
-            android:id="@+id/btnVerEstado"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Ver mi Estado"
-            android:textSize="18sp"
-            android:paddingVertical="16dp"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_marginBottom="16dp"/>
     </LinearLayout>
 </ScrollView>
