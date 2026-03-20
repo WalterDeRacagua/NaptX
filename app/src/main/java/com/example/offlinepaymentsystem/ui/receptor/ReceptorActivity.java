@@ -9,11 +9,9 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.offlinepaymentsystem.R;
+import com.example.offlinepaymentsystem.utils.Constants;
 
 public class ReceptorActivity extends AppCompatActivity {
-
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
 
     private TextView tvWelcome;
     private TextView tvAddress;
@@ -35,8 +33,8 @@ public class ReceptorActivity extends AppCompatActivity {
         btnCompletarPago = findViewById(R.id.btnCompletarPago);
 
         // Obtener address
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        address = prefs.getString(KEY_WALLET_ADDRESS, null);
+        prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        address = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
 
         if (address == null) {
             tvWelcome.setText("No tienes wallet creada");

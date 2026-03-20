@@ -65,9 +65,6 @@ public class CrearWalletActivity extends AppCompatActivity {
         String addressGuardada = prefs.getString(KEY_WALLET_ADDRESS, null);
 
         if (addressGuardada != null && !existeWallet) {
-            // SharedPreferences dice que hay wallet, pero no existe realmente
-            Log.w(TAG, "ESTADO INCONSISTENTE: Limpiando SharedPreferences...");
-
             SharedPreferences.Editor editor = prefs.edit();
             editor.clear();
             editor.apply();

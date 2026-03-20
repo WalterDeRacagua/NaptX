@@ -21,6 +21,7 @@ import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
 import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
+import com.example.offlinepaymentsystem.utils.Constants;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
@@ -32,8 +33,6 @@ import org.web3j.utils.Numeric;
 public class CompletarPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "CompletarPago";
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     // UI
@@ -85,8 +84,8 @@ public class CompletarPagoActivity extends AppCompatActivity {
         walletManager = new WalletManager(this);
         web3Manager = new Web3Manager(this);
 
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        addressReceptor = prefs.getString(KEY_WALLET_ADDRESS, null);
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        addressReceptor = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
 
         if (addressReceptor == null) {
             tvEstado.setText("Error: No hay wallet creada");
@@ -216,11 +215,7 @@ public class CompletarPagoActivity extends AppCompatActivity {
 
     private void enviarConfirmarPago(Credentials credentials) {
         try {
-            Log.d(TAG, "=== CONFIRMAR PAGO EN BLOCKCHAIN ===");
-            Log.d(TAG, "Receptor: " + credentials.getAddress());
-            Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
-            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
-
+            Log.d(TAG, "Confirmar pago - Receptor: " + credentials.getAddress());
             String hashFinal = web3Manager.confirmarPago(
                     credentials,
                     pagoId,

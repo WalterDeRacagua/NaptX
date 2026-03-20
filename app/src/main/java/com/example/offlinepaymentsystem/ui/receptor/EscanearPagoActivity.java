@@ -24,10 +24,10 @@ import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
 import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
-import com.google.zxing.BarcodeFormat;
+import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.CryptoUtils;
+import com.example.offlinepaymentsystem.utils.QRCodeHelper;
 import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
@@ -39,8 +39,6 @@ import org.web3j.utils.Numeric;
 public class EscanearPagoActivity extends AppCompatActivity {
 
     private static final String TAG = "EscanearPago";
-    private static final String PREFS_NAME = "WalletPrefs";
-    private static final String KEY_WALLET_ADDRESS = "WALLET_ADDRESS";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
 
     private final ActivityResultLauncher<ScanOptions> barcodeLauncher = registerForActivityResult(
@@ -97,8 +95,8 @@ public class EscanearPagoActivity extends AppCompatActivity {
         walletManager = new WalletManager(this);
         web3Manager = new Web3Manager(this);
 
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        addressReceptor = prefs.getString(KEY_WALLET_ADDRESS, null);
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        addressReceptor = prefs.getString(Constants.KEY_WALLET_ADDRESS, null);
 
         if (addressReceptor == null) {
             tvEstado.setText("Error: No hay wallet creada");
@@ -182,7 +180,7 @@ public class EscanearPagoActivity extends AppCompatActivity {
 
             // Mostrar datos
             String datos = "Pago recibido:\n\n" +
-                    "Monto: " + convertirWeiAETH(amount) + " ETH\n" +
+                    "Monto: " + CryptoUtils.convertirWeiAETH(amount) + " ETH\n" +
                     "Receptor: " + receptor + "\n" +
                     "Timestamp: " + timestamp;
 
@@ -267,11 +265,6 @@ public class EscanearPagoActivity extends AppCompatActivity {
         }
     }
 
-    private String convertirWeiAETH(long wei) {
-        double eth = wei / 1000000000000000000.0;
-        return String.format("%.6f", eth);
-    }
-
     private void generarQRConfirmacion(String pagoId, String hashPreparado, long timestampPreparacion){
         try {
             JSONObject json = new JSONObject();
@@ -281,7 +274,7 @@ public class EscanearPagoActivity extends AppCompatActivity {
 
             String datosQR = json.toString();
 
-            Bitmap qrBitmap = generarQRBitmap(datosQR, 512, 512);
+            Bitmap qrBitmap = QRCodeHelper.generarQRBitmap(datosQR, 512, 512);
 
             this.ivQRConfirmacion.setImageBitmap(qrBitmap);
             this.layoutQRConfirmacion.setVisibility(View.VISIBLE);
@@ -292,21 +285,6 @@ public class EscanearPagoActivity extends AppCompatActivity {
         } catch (JSONException | WriterException e) {
             this.tvEstado.setText("Error al generar QR: \n " +e.getMessage());
         }
-    }
-
-    private Bitmap generarQRBitmap(String content, int width,int height) throws WriterException {
-        QRCodeWriter writer = new QRCodeWriter();
-        BitMatrix bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, width, height);
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-
-        for (int x= 0; x< width; x++){
-            for (int y =0; y< height;y++){
-                bitmap.setPixel(x,y, bitMatrix.get(x,y)? 0xFF000000 : 0xFFFFFFFF);
-            }
-        }
-
-        return bitmap;
     }
 }
 
