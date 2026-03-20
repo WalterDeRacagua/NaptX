@@ -109,32 +109,6 @@ public class Web3Manager {
         }
     }
 
-    //Verificar conexión a Sepolia.
-    public boolean verificarConexion(){
-        try{
-            org.web3j.protocol.core.methods.response.EthBlockNumber blockNumber = this.web3j.ethBlockNumber().send();
-
-            if (blockNumber.hasError()){
-                Log.e(TAG, "Error al conectarnos con Sepolia: " + blockNumber.getError().getMessage());
-                return false;
-            }
-
-            long numeroBloque = blockNumber.getBlockNumber().longValue();
-
-            Log.d(TAG, "Conectado a Sepolia. Bloque actual: "+ numeroBloque);
-            return true;
-        }catch (Exception e){
-            Log.e(TAG, "Error al verificar la cone: ", e);
-            return false;
-        }
-    }
-
-
-    /**
-     * Obtener estado de un emisor desde el contrato
-     * @param addressEmisor Address del emisor a consultar
-     * @return Objeto Emisor con los datos, o null si hay error
-     */
     public Emisor obtenerEstadoEmisor(String addressEmisor) {
         try {
             Function function = new Function(

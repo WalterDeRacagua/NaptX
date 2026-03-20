@@ -86,8 +86,6 @@ public class Emisor {
         this.whitelist = whitelist;
     }
 
-    // MÉTODOS AUXILIARES
-    /*En hexadecimal es mucho más bonito para mostrárselo al usuario*/
     public String getHashActualHex() {
         if (hashActual == null) return "null";
         StringBuilder sb = new StringBuilder("0x");

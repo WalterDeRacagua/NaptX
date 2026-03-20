@@ -29,15 +29,4 @@ public interface WhitelistDao {
     @Query("SELECT * FROM whitelist ORDER BY timestampAgregado DESC")
     List<WhitelistItem> obtenerTodos();
 
-    @Query("SELECT COUNT(*) FROM whitelist WHERE direccion = :direccion")
-    int existe(String direccion);
-
-    @Query("DELETE FROM whitelist WHERE direccion = :direccion")
-    void eliminar(String direccion);
-
-    @Query("SELECT COUNT(*) FROM whitelist")
-    int contar();
-
-    @Query("DELETE FROM whitelist")
-    void eliminarTodos();
 }

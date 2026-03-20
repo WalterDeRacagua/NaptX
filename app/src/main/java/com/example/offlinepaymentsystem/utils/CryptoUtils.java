@@ -1,5 +1,7 @@
 package com.example.offlinepaymentsystem.utils;
 
+import org.web3j.utils.Numeric;
+
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 
@@ -52,6 +54,40 @@ public class CryptoUtils {
         return Math.abs(random.nextLong());
     }
 
+    /**
+     * Convierte un long a bytes32 (big-endian) para Ethereum
+     * @param value Valor long a convertir
+     * @return Array de 32 bytes
+     */
+    public static byte[] longToBytes32(long value) {
+        byte[] bytes = new byte[32];
+        for (int i = 0; i < 8; i++) {
+            bytes[31 - i] = (byte) (value >> (i * 8));
+        }
+        return bytes;
+    }
+
+    /**
+     * Convierte un address Ethereum a bytes (20 bytes, sin padding)
+     * @param address Address con o sin 0x
+     * @return Array de 20 bytes
+     */
+    public static byte[] addressToBytes(String address) {
+        String addressSin0x = address.startsWith("0x") ? address.substring(2) : address;
+        return Numeric.hexStringToByteArray(addressSin0x);
+    }
+
+    /**
+     * Convierte un address Ethereum a bytes32 (con padding de 12 ceros)
+     * @param address Address con o sin 0x
+     * @return Array de 32 bytes
+     */
+    public static byte[] addressToBytes32(String address) {
+        byte[] addressBytes = addressToBytes(address);
+        byte[] padded = new byte[32];
+        System.arraycopy(addressBytes, 0, padded, 12, 20);
+        return padded;
+    }
     private CryptoUtils() {
         throw new AssertionError("No se puede instanciar esta clase");
     }

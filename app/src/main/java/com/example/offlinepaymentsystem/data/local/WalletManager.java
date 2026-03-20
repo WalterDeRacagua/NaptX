@@ -12,6 +12,8 @@ import androidx.annotation.RequiresApi;
 import androidx.fragment.app.FragmentActivity;
 
 
+import com.example.offlinepaymentsystem.utils.CryptoUtils;
+
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Hash;
@@ -33,15 +35,10 @@ import javax.crypto.spec.GCMParameterSpec;
 public class WalletManager {
     private static final String TAG = "WalletManager";
     private static final String KEYSTORE_PROVIDER= "AndroidKeyStore";
-    //Nombre de la clave AES en el keystore
     private static final String AES_KEY_ALIAS= "naptx_wallet_cipher_key";
-    //Nombre del fichero donde guardamos la clave de Ethereum cifrada
     private static  final String WALLET_FILE = "wallet_encrypted.dat";
-    //Inicialización del vector IV para el cifrado, se genera aleatoriamente al cifrar y se necesita descifrar
     private static  final String IV_FILE = "wallet_iv.dat";
-    //Longitud del IV
     private static final int GCM_IV_LENGTH =12;
-    //TAG de autenticación que verifica que el cifrado no fue manipulado
     private static final int GCM_TAG_LENGTH =128;
 
     private final Context context;
@@ -514,20 +511,12 @@ public class WalletManager {
     private byte[] construirMensajeRegistro(String address, byte[] deviceId, long timestamp, long nonce) {
         try {
             // Convertir address a bytes (sin "0x")
-            String addressSin0x = address.startsWith("0x") ? address.substring(2) : address;
-            byte[] addressBytes = Numeric.hexStringToByteArray(addressSin0x);
+            byte[] addressBytes = CryptoUtils.addressToBytes(address);
 
-            // Convertir timestamp a bytes32 (big-endian)
-            byte[] timestampBytes = new byte[32];
-            for (int i = 0; i < 8; i++) {
-                timestampBytes[31 - i] = (byte) (timestamp >> (8 * i));
-            }
+            byte[] timestampBytes = CryptoUtils.longToBytes32(timestamp);
 
             // Convertir nonce a bytes32 (big-endian)
-            byte[] nonceBytes = new byte[32];
-            for (int i = 0; i < 8; i++) {
-                nonceBytes[31 - i] = (byte) (nonce >> (8 * i));
-            }
+            byte[] nonceBytes = CryptoUtils.longToBytes32(nonce);
 
             // Concatenar: address (20 bytes) + deviceId (32 bytes) + timestamp (32 bytes) + nonce (32 bytes)
             byte[] concatenado = new byte[addressBytes.length + deviceId.length + timestampBytes.length + nonceBytes.length];
@@ -539,11 +528,7 @@ public class WalletManager {
             // Hash con Keccak256
             byte[] hash = Hash.sha3(concatenado);
 
-            Log.d(TAG, "Mensaje construido - Address: " + address);
-            Log.d(TAG, "Mensaje construido - DeviceId: " + Numeric.toHexString(deviceId));
-            Log.d(TAG, "Mensaje construido - Timestamp: " + timestamp);
-            Log.d(TAG, "Mensaje construido - Nonce: " + nonce);
-            Log.d(TAG, "Mensaje construido - Hash: " + Numeric.toHexString(hash));
+            Log.d(TAG, "Mensaje registro construido: " + Numeric.toHexString(hash));
 
             return hash;
 
@@ -666,26 +651,11 @@ public class WalletManager {
     }
 
     private byte[] construirMensajePago(byte[] hashUsado, long amount, String receptor, long timestamp, long nonce, byte[] deviceId ){
-        //Transformo el address 0x.... a bytes sin el 0x
         byte[] receptorBytes = Numeric.hexStringToByteArray(receptor);
 
-        //Convertimos amount a bytes32
-        byte[] amountBytes = new byte[32];
-        for (int i = 0; i < 8; i++) {
-            amountBytes[31-i] = (byte) (amount >> (i*8));
-        }
-
-        // Convertimos timestamp a bytes32
-        byte[] timestampBytes = new byte[32];
-        for (int i = 0; i < 8; i++) {
-            timestampBytes[31 - i] = (byte) (timestamp >> (i * 8));
-        }
-
-        // Convertimos nonce a bytes32
-        byte[] nonceBytes = new byte[32];
-        for (int i = 0; i < 8; i++) {
-            nonceBytes[31 - i] = (byte) (nonce >> (i * 8));
-        }
+        byte[] amountBytes = CryptoUtils.longToBytes32(amount);
+        byte[] timestampBytes = CryptoUtils.longToBytes32(timestamp);
+        byte[] nonceBytes = CryptoUtils.longToBytes32(nonce);
 
         byte[] mensaje = new byte[hashUsado.length + amountBytes.length + receptorBytes.length +
                 timestampBytes.length + nonceBytes.length + deviceId.length];
@@ -727,16 +697,7 @@ public class WalletManager {
 
             byte[] mensaje = construirMensajeWhitelist(receptores,limites,timestamp,nonce);
 
-            // === DEBUG LOGS ===
-            Log.d(TAG, "=== CONFIGURAR WHITELIST DEBUG ===");
-            Log.d(TAG, "Número de receptores: " + receptores.length);
-            for (int i = 0; i < receptores.length; i++) {
-                Log.d(TAG, "Receptor[" + i + "]: " + receptores[i]);
-                Log.d(TAG, "Límite[" + i + "]: " + limites[i] + " wei");
-            }
-            Log.d(TAG, "Timestamp: " + timestamp);
-            Log.d(TAG, "Nonce: " + nonce);
-            Log.d(TAG, "Mensaje construido (hex): " + Numeric.toHexString(mensaje));
+            Log.d(TAG, "Firmar whitelist: " + receptores.length + " receptores");
 
             byte[] encryptedKey = leerDeFichero(WALLET_FILE);
             byte[] iv = leerDeFichero(IV_FILE);
@@ -809,24 +770,12 @@ public class WalletManager {
             long timestamp,
             long nonce
     ) {
-        Log.d(TAG, ">>> construirMensajeWhitelist INICIO");
-        Log.d(TAG, ">>> Parámetros recibidos:");
-        Log.d(TAG, ">>> receptores.length = " + receptores.length);
-        for (int i = 0; i < receptores.length; i++) {
-            Log.d(TAG, ">>> receptores[" + i + "] = " + receptores[i]);
-        }
-        Log.d(TAG, ">>> limites.length = " + limites.length);
-        for (int i = 0; i < limites.length; i++) {
-            Log.d(TAG, ">>> limites[" + i + "] = " + limites[i]);
-        }
-        Log.d(TAG, ">>> timestamp = " + timestamp);
-        Log.d(TAG, ">>> nonce = " + nonce);
+        Log.d(TAG, "Construir mensaje whitelist: " + receptores.length + " receptores");
 
         int totalReceptores = receptores.length * 32;
         int totalLimites = limites.length * 32;
         int totalSize = totalReceptores + totalLimites + 32 + 32;
 
-        Log.d(TAG, ">>> totalSize calculado = " + totalSize);
 
         byte[] mensaje = new byte[totalSize];
         int offset = 0;
@@ -909,10 +858,6 @@ public class WalletManager {
 
             byte[] mensaje = construirMensajeConfirmacion(pagoId, hashPreparado);
 
-            Log.d(TAG, "=== FIRMAR CONFIRMACIÓN ===");
-            Log.d(TAG, "PagoId: " + Numeric.toHexString(pagoId));
-            Log.d(TAG, "HashPreparado: " + Numeric.toHexString(hashPreparado));
-            Log.d(TAG, "Mensaje: " + Numeric.toHexString(mensaje));
 
             byte[] encryptedKey = leerDeFichero(WALLET_FILE);
             byte[] iv = leerDeFichero(IV_FILE);

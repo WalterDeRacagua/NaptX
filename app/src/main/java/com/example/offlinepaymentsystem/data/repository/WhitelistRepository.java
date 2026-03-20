@@ -32,17 +32,6 @@ public class WhitelistRepository {
         });
     }
 
-    public void obtenerPorDireccion(String direccion, RepositoryCallback<WhitelistItem> callback){
-        executorService.execute(()->{
-            try {
-                WhitelistItem item= this.dao.obtenerPorDireccion(direccion);
-                callback.onSuccess(item);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
     public void obtenerTodos(RepositoryCallback<List<WhitelistItem>> callback){
         executorService.execute(()->{
             try {
@@ -54,27 +43,7 @@ public class WhitelistRepository {
         });
     }
 
-    public void existe(String direccion, RepositoryCallback<Boolean> callback){
-        executorService.execute(()->{
-            try {
-                boolean existe = dao.existe(direccion) > 0;
-                callback.onSuccess(existe);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
 
-    public void eliminar(String direccion, RepositoryCallback<Void> callback) {
-        executorService.execute(() -> {
-            try {
-                dao.eliminar(direccion);
-                callback.onSuccess(null);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
 
     public void decrementarLimite(String direccion, long amountPagado, RepositoryCallback<Void> callback){
 

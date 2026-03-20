@@ -10,9 +10,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Capa entre la Activity y el DAO
- * */
+
 public class PagoRepository {
 
     private final PagoPendienteDao dao;
@@ -51,62 +49,6 @@ public class PagoRepository {
             try {
                 List<PagoPendiente> pagos = dao.obtenerPagosPreparados();
                 callback.onSuccess(pagos);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
-    public void obtenerPagosConfirmados(RepositoryCallback<List<PagoPendiente>>callback){
-        executorService.execute(()->{
-            try {
-                List<PagoPendiente> pagos = dao.obtenerPagosConfirmados();
-                callback.onSuccess(pagos);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
-    public void obtenerTodosPagos(RepositoryCallback<List<PagoPendiente>>callback){
-        executorService.execute(()->{
-            try {
-                List<PagoPendiente> pagos = dao.obtenerTodosPagos();
-                callback.onSuccess(pagos);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
-    public void obtenerPagoPorID(String pagoId, RepositoryCallback<PagoPendiente>callback){
-        executorService.execute(()->{
-            try {
-                PagoPendiente pago = dao.obtenerPagoPorId(pagoId);
-                callback.onSuccess(pago);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
-    public void contarPagosPreparados(RepositoryCallback<Integer>callback){
-        executorService.execute(()->{
-            try {
-                int count = dao.contarPagosPreparados();
-                callback.onSuccess(count);
-            } catch (Exception e) {
-                callback.onError(e.getMessage());
-            }
-        });
-    }
-
-
-    public void limpiarPagosFallidos(RepositoryCallback<Void>callback){
-        executorService.execute(()->{
-            try {
-                dao.limpiarPagosFallidos();
-                callback.onSuccess(null);
             } catch (Exception e) {
                 callback.onError(e.getMessage());
             }
