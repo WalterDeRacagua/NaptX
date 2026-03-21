@@ -385,7 +385,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             tvEstado.setText("CONFIRMACIÓN FIRMADA (OFFLINE)\n\n" +
                     "Muestra este QR al receptor\n" +
                     "para completar el pago\n\n" +
-                    "Escanea el QR 4 para obtener el hashFinal");
+                    "Escanea el QR 4 para obtener el hashFinal y sincronizar tu wallet.");
             btnEscanear.setEnabled(false);
 
         } catch (JSONException | WriterException e) {

@@ -120,6 +120,7 @@ public class ActualizarHashActivity extends AppCompatActivity {
             SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("HASH_ACTUAL", hashFinal);
+            editor.remove("KEY_HASH_FINAL_CALCULADO");
             editor.apply();
 
             tvEstado.setText("Hash actualizado correctamente\n\n" +
@@ -128,8 +129,9 @@ public class ActualizarHashActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Wallet sincronizada", Toast.LENGTH_LONG).show();
 
-            btnEscanearQR4.setEnabled(false);
-            btnCalcularManual.setEnabled(false);
+            new android.os.Handler().postDelayed(() -> {
+                finish();
+            }, 2000);
         } catch (Exception e) {
             Toast.makeText(this, "Error: QR inválido", Toast.LENGTH_SHORT).show();
         }
@@ -165,6 +167,7 @@ public class ActualizarHashActivity extends AppCompatActivity {
 
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString("HASH_ACTUAL", hashFinalCalculado);
+            editor.remove("KEY_HASH_FINAL_CALCULADO");
             editor.apply();
 
             tvEstado.setText("Hash actualizado manualmente\n\n" +
@@ -173,8 +176,9 @@ public class ActualizarHashActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Hash actualizado", Toast.LENGTH_LONG).show();
 
-            btnEscanearQR4.setEnabled(false);
-            btnCalcularManual.setEnabled(false);
+            new android.os.Handler().postDelayed(() -> {
+                this.finish();
+            }, 2000);
         } catch (Exception e) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
