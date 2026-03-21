@@ -18,6 +18,8 @@ import com.example.offlinepaymentsystem.R;
 import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
 import com.example.offlinepaymentsystem.ui.emisor.EmisorActivity;
 import com.example.offlinepaymentsystem.ui.receptor.ReceptorActivity;
+import com.example.offlinepaymentsystem.ui.tokens.ComprarTokensActivity;
+import com.example.offlinepaymentsystem.ui.tokens.VenderTokensActivity;
 import com.example.offlinepaymentsystem.ui.wallet.CrearWalletActivity;
 import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
@@ -28,7 +30,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnReceptor;
     private Button btnCrearWallet;
     private Button btnVerEstado;
-    private TextView tvEstadoConexion;
+    private Button btnComprarTokens;
+    private Button btnVenderTokens;
 
     private Web3Manager web3Manager;
 
@@ -44,7 +47,9 @@ public class MainActivity extends AppCompatActivity {
         this.btnReceptor = findViewById(R.id.btnReceptor);
         this.btnCrearWallet = findViewById(R.id.btnCrearWallet);
         this.btnVerEstado = findViewById(R.id.btnVerEstado);
-        this.tvEstadoConexion = findViewById(R.id.tvEstadoConexion);
+        this.btnComprarTokens = findViewById(R.id.btnComprarTokens);
+        this.btnVenderTokens = findViewById(R.id.btnVenderTokens);
+
 
         this.btnPagador.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -68,6 +73,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {onConsultarEstado();}
         });
+
+        this.btnComprarTokens.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {onComprarClicked();}
+        });
+        this.btnVenderTokens.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {onVenderClicked();}
+        });
     }
 
     private void onPayerClicked() {
@@ -79,24 +93,17 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void onSyncronizeClicked(){
-        Toast.makeText(this, "Sincronizando...", Toast.LENGTH_SHORT).show();
-
-        tvEstadoConexion.setText("Sincronizando");
-        tvEstadoConexion.setTextColor(ContextCompat.getColor(this, R.color.status_connecting));
-
-        //Simulamos una sincronización (4 segundos)
-        tvEstadoConexion.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                tvEstadoConexion.setText("Conectado a Sepolia");
-                tvEstadoConexion.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.status_connected));
-            }
-        }, 4000);
-    }
-
     private void onCrearWalletClicked(){
         Intent intent = new Intent(this, CrearWalletActivity.class);
+        startActivity(intent);
+    }
+
+    private void onComprarClicked(){
+        Intent intent = new Intent(this, ComprarTokensActivity.class);
+        startActivity(intent);
+    }
+    private void onVenderClicked(){
+        Intent intent = new Intent(this, VenderTokensActivity.class);
         startActivity(intent);
     }
 
@@ -204,4 +211,6 @@ public class MainActivity extends AppCompatActivity {
         intent.setData(Uri.parse(url));
         startActivity(intent);
     }
+
+
 }

@@ -104,18 +104,58 @@
             android:layout_marginTop="16dp"/>
 
 
-        <TextView
-            android:id="@+id/tvEstadoConexion"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/desconectado"
-            android:textSize="14sp"
-            android:textColor="@color/status_disconnected"
+        <!-- Separador -->
+        <View
+            android:id="@+id/viewSeparador"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
             app:layout_constraintTop_toBottomOf="@id/btnVerEstado"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="32dp"/>
+            android:layout_marginTop="24dp"/>
+
+        <!-- Título Tokens -->
+        <TextView
+            android:id="@+id/tvTituloTokens"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gestión de Tokens"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"
+            app:layout_constraintTop_toBottomOf="@id/viewSeparador"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Botón Comprar Tokens -->
+        <Button
+            android:id="@+id/btnComprarTokens"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Comprar NPTX"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:backgroundTint="@color/accent"
+            app:layout_constraintTop_toBottomOf="@id/tvTituloTokens"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Botón Vender Tokens -->
+        <Button
+            android:id="@+id/btnVenderTokens"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Vender NPTX"
+            android:textSize="18sp"
+            android:paddingVertical="16dp"
+            android:backgroundTint="@color/error"
+            app:layout_constraintTop_toBottomOf="@id/btnComprarTokens"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

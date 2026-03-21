@@ -811,5 +811,97 @@ public class Web3Manager {
 
         return balanceWei.longValue();
     }
+
+    public String comprarTokens(Credentials credentials, long ethEnWei) throws Exception {
+        Log.d(TAG, "Comprar tokens con " + ethEnWei + " wei");
+
+        // Función comprarTokens() - no recibe parámetros, solo ETH
+        Function function = new Function(
+                "comprarTokens",
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        // Obtener nonce
+        BigInteger txNonce = web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send().getTransactionCount();
+
+        // Gas price
+        BigInteger gasPrice = web3j.ethGasPrice().send().getGasPrice();
+
+        // Crear transacción CON valor (ETH)
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(200000), // Gas limit para comprarTokens
+                Constants.CONTRACT_ADDRESS,
+                BigInteger.valueOf(ethEnWei), // ← ETH a enviar
+                encodedFunction
+        );
+
+        // Firmar y enviar
+        byte[] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                CryptoConstants.SEPOLIA_CHAIN_ID,
+                credentials
+        );
+
+        EthSendTransaction response = web3j.ethSendRawTransaction(
+                Numeric.toHexString(signedMessage)
+        ).send();
+
+        if (response.hasError()) {
+            throw new Exception("Error: " + response.getError().getMessage());
+        }
+
+        return response.getTransactionHash();
+    }
+
+    public String venderTokens(Credentials credentials, long cantidadTokens) throws Exception {
+        Log.d(TAG, "Vender " + cantidadTokens + " tokens");
+
+        Function function = new Function(
+                "venderTokens",
+                Arrays.asList(new Uint256(cantidadTokens)),
+                Collections.emptyList()
+        );
+
+        String encodedFunction = FunctionEncoder.encode(function);
+
+        BigInteger txNonce = web3j.ethGetTransactionCount(
+                credentials.getAddress(),
+                DefaultBlockParameterName.LATEST
+        ).send().getTransactionCount();
+
+        BigInteger gasPrice = web3j.ethGasPrice().send().getGasPrice();
+
+        RawTransaction rawTransaction = RawTransaction.createTransaction(
+                txNonce,
+                gasPrice,
+                BigInteger.valueOf(150000), // Gas limit para venderTokens
+                Constants.CONTRACT_ADDRESS,
+                encodedFunction
+        );
+
+        byte[] signedMessage = TransactionEncoder.signMessage(
+                rawTransaction,
+                CryptoConstants.SEPOLIA_CHAIN_ID,
+                credentials
+        );
+
+        EthSendTransaction response = web3j.ethSendRawTransaction(
+                Numeric.toHexString(signedMessage)
+        ).send();
+
+        if (response.hasError()) {
+            throw new Exception("Error: " + response.getError().getMessage());
+        }
+
+        return response.getTransactionHash();
+    }
 }
 

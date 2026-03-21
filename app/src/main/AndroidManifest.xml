@@ -30,6 +30,19 @@
             android:name=".ui.wallet.CrearWalletActivity"
             android:exported="false"/>
 
+        <!-- Token activities -->
+        <activity
+            android:name=".ui.tokens.ComprarTokensActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity"/>
+
+        <activity
+            android:name=".ui.tokens.VenderTokensActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity"/>
+
         <!-- Emisor -->
         <activity
             android:name=".ui.emisor.EmisorActivity"

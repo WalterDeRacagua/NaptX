@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vender Tokens NPTX"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Balances actuales -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#F5F5F5"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tus balances:"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvBalanceETH"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ETH: Cargando..."
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvBalanceNPTX"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NPTX: Cargando..."
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- Input NPTX -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cantidad a vender (NPTX):"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/etCantidadNPTX"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="0.5"
+            android:inputType="numberDecimal"
+            android:textSize="18sp"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Conversión -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#E3F2FD"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recibirás:"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/tvETHARecibir"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 ETH"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#1976D2"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Precio: 1 NPTX = 1 ETH"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp"
+                android:textColor="#555555"/>
+        </LinearLayout>
+
+        <!-- Botón Vender -->
+        <Button
+            android:id="@+id/btnVender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vender Tokens"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:backgroundTint="#1976D2"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Estado -->
+        <TextView
+            android:id="@+id/tvEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textAlignment="center"
+            android:textSize="14sp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+</ScrollView>
