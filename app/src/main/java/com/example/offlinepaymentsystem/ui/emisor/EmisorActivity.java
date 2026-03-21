@@ -19,6 +19,7 @@ public class EmisorActivity extends AppCompatActivity {
     private Button btnGestionarWhitelist;
     private Button btnHacerPago;
     private Button btnConfirmarPago;
+    private Button btnActualizarHash;
 
     private SharedPreferences prefs;
     private String address;
@@ -35,6 +36,7 @@ public class EmisorActivity extends AppCompatActivity {
         this.btnGestionarWhitelist = findViewById(R.id.btnGestionarWhitelist);
         this.btnHacerPago = findViewById(R.id.btnHacerPago);
         this.btnConfirmarPago = findViewById(R.id.btnConfirmarPago);
+        this.btnActualizarHash = findViewById(R.id.btnActualizarHash);
 
         // Obtener address
         this.prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -47,16 +49,17 @@ public class EmisorActivity extends AppCompatActivity {
             this.btnGestionarWhitelist.setEnabled(false);
             this.btnHacerPago.setEnabled(false);
             this.btnConfirmarPago.setEnabled(false);
+            this.btnActualizarHash.setEnabled(false);
         } else {
             this.tvWelcome.setText("Bienvenido, Emisor");
             this.tvAddress.setText("Tu address:\n" + address);
         }
 
-        // Botones
         this.btnRegistrar.setOnClickListener(v -> onRegistrarClicked());
         this.btnGestionarWhitelist.setOnClickListener(v -> onGestionarWhitelistClicked());
         this.btnHacerPago.setOnClickListener(v -> onHacerPagoClicked());
         this.btnConfirmarPago.setOnClickListener(v -> onConfirmarPagoClicked());
+        this.btnActualizarHash.setOnClickListener(v -> onActualizarHashClicked());
     }
 
     private void onRegistrarClicked() {
@@ -76,6 +79,11 @@ public class EmisorActivity extends AppCompatActivity {
 
     private void onConfirmarPagoClicked() {
         Intent intent = new Intent(this, ConfirmarPagoActivity.class);
+        startActivity(intent);
+    }
+
+    private void onActualizarHashClicked(){
+        Intent intent = new Intent(this, ActualizarHashActivity.class);
         startActivity(intent);
     }
 

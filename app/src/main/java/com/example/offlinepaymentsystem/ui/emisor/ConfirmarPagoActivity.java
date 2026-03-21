@@ -313,13 +313,6 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             // Calcular hashFinal = keccak256(mensaje)
             byte[] hashFinal = Hash.sha3(mensaje);
 
-            Log.d(TAG, "=== CALCULAR HASH FINAL (OFFLINE) ===");
-            Log.d(TAG, "HashUsado: " + Numeric.toHexString(hashUsado));
-            Log.d(TAG, "Amount: " + amount + " (" + Numeric.toHexString(amountBytes) + ")");
-            Log.d(TAG, "Receptor: " + receptor);
-            Log.d(TAG, "Timestamp: " + timestamp + " (" + Numeric.toHexString(timestampBytes) + ")");
-            Log.d(TAG, "Mensaje concatenado: " + Numeric.toHexString(mensaje));
-            Log.d(TAG, "HashFinal: " + Numeric.toHexString(hashFinal));
 
             tvEstado.setText("HashFinal calculado\n\nFirmando confirmación...");
 
@@ -362,10 +355,10 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             // PASO 1: Guardar hashFinal como próximo hashUsado
             SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
             prefs.edit()
-                    .putString("HASH_ACTUAL", Numeric.toHexString(hashFinal))
+                    .putString("KEY_HASH_FINAL_CALCULADO", Numeric.toHexString(hashFinal))
                     .apply();
 
-            Log.d(TAG, "HashFinal guardado como próximo hashUsado: " +
+            Log.d(TAG, "HashFinal guardado como próximo hashUsado (calculado temporalmente con el fin de evitar perder el hash de la cadena): " +
                     Numeric.toHexString(hashFinal));
 
             decrementarLimiteWhitelist();
@@ -392,7 +385,7 @@ public class ConfirmarPagoActivity extends AppCompatActivity {
             tvEstado.setText("CONFIRMACIÓN FIRMADA (OFFLINE)\n\n" +
                     "Muestra este QR al receptor\n" +
                     "para completar el pago\n\n" +
-                    "HashFinal guardado para próximo pago");
+                    "Escanea el QR 4 para obtener el hashFinal");
             btnEscanear.setEnabled(false);
 
         } catch (JSONException | WriterException e) {

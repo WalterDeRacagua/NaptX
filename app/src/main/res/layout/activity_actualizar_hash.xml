@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/tvTitulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Actualizar Hash"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/tvEstado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Escanea el QR 4 del receptor\ncon el hashFinal"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:padding="16dp"
+        android:background="#F5F5F5"
+        android:layout_marginBottom="32dp"/>
+
+    <!-- Botón principal: Escanear QR 4 -->
+    <Button
+        android:id="@+id/btnEscanearQR4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Escanear QR 4"
+        android:textSize="18sp"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Separador -->
+    <TextView
+        android:id="@+id/tvSeparador"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="── o si el QR 4 se perdió ──"
+        android:textAlignment="center"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Botón alternativo: Calcular manual -->
+    <Button
+        android:id="@+id/btnCalcularManual"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Calcular Manualmente"
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:backgroundTint="#FF9800"
+        android:layout_marginBottom="32dp"/>
+
+    <!-- Información adicional -->
+    <TextView
+        android:id="@+id/tvInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Después de confirmar un pago (QR 3),\nescanea el QR 4 que te da el receptor\npara sincronizar tu hash chain.\n\nSolo usa la opción manual si el QR 4\nse perdió y estás SEGURO de que\nel pago se confirmó en blockchain."
+        android:textSize="12sp"
+        android:textAlignment="center"
+        android:textColor="#757575"
+        android:padding="16dp"/>
+
+</LinearLayout>
