@@ -54,6 +54,51 @@
             android:visibility="gone"
             android:layout_marginBottom="24dp"/>
 
+        <LinearLayout
+            android:id="@+id/layoutQR4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone"
+            android:padding="24dp"
+            android:background="#E8F5E9"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¡PAGO COMPLETADO!"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#2E7D32"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QR 4 - HashFinal"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <ImageView
+                android:id="@+id/ivQR4"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
+                android:contentDescription="QR Code HashFinal"
+                android:scaleType="fitCenter"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Muestra este QR al emisor\npara que actualice su hash"
+                android:textSize="14sp"
+                android:textAlignment="center"
+                android:textColor="#555555"/>
+        </LinearLayout>
+
         <!-- Botón nuevo escaneo -->
         <Button
             android:id="@+id/btnNuevoEscaneo"

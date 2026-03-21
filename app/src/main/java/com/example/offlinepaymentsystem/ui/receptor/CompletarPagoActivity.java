@@ -3,11 +3,14 @@ package com.example.offlinepaymentsystem.ui.receptor;
 import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,9 +25,12 @@ import com.example.offlinepaymentsystem.data.blockchain.Web3Manager;
 import com.example.offlinepaymentsystem.data.local.ObtenerCredentialsCallback;
 import com.example.offlinepaymentsystem.data.local.WalletManager;
 import com.example.offlinepaymentsystem.utils.Constants;
+import com.example.offlinepaymentsystem.utils.QRCodeHelper;
+import com.google.zxing.WriterException;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Numeric;
@@ -40,6 +46,8 @@ public class CompletarPagoActivity extends AppCompatActivity {
     private Button btnEscanear;
     private TextView tvDatos;
     private Button btnNuevoEscaneo;
+    private LinearLayout layoutQR4;
+    private ImageView ivQR4;
 
     // Managers
     private WalletManager walletManager;
@@ -74,10 +82,12 @@ public class CompletarPagoActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvEstado = findViewById(R.id.tvEstado);
-        btnEscanear = findViewById(R.id.btnEscanear);
-        tvDatos = findViewById(R.id.tvDatos);
-        btnNuevoEscaneo = findViewById(R.id.btnNuevoEscaneo);
+        this.tvEstado = findViewById(R.id.tvEstado);
+        this.btnEscanear = findViewById(R.id.btnEscanear);
+        this.tvDatos = findViewById(R.id.tvDatos);
+        this.btnNuevoEscaneo = findViewById(R.id.btnNuevoEscaneo);
+        this.layoutQR4 = findViewById(R.id.layoutQR4);
+        this.ivQR4 = findViewById(R.id.ivQR4);
     }
 
     private void initData() {
@@ -102,10 +112,11 @@ public class CompletarPagoActivity extends AppCompatActivity {
     }
 
     private void reiniciarEscaneo() {
-        tvDatos.setVisibility(View.GONE);
-        btnNuevoEscaneo.setVisibility(View.GONE);
-        btnEscanear.setEnabled(true);
-        tvEstado.setText("Escanea el QR 3 del emisor");
+        this.tvDatos.setVisibility(View.GONE);
+        this.layoutQR4.setVisibility(View.GONE);
+        this.btnNuevoEscaneo.setVisibility(View.GONE);
+        this.btnEscanear.setEnabled(true);
+        this.tvEstado.setText("Escanea el QR 3 del emisor");
     }
 
     private void verificarPermisoYEscanear() {
@@ -216,6 +227,7 @@ public class CompletarPagoActivity extends AppCompatActivity {
     private void enviarConfirmarPago(Credentials credentials) {
         try {
             Log.d(TAG, "Confirmar pago - Receptor: " + credentials.getAddress());
+
             String hashFinal = web3Manager.confirmarPago(
                     credentials,
                     pagoId,
@@ -227,17 +239,7 @@ public class CompletarPagoActivity extends AppCompatActivity {
             Log.d(TAG, "HashFinal devuelto: " + hashFinal);
 
             runOnUiThread(() -> {
-                tvEstado.setText("¡PAGO COMPLETADO!\n\n" +
-                        "Fondos transferidos exitosamente\n\n" +
-                        "HashFinal:\n" + hashFinal.substring(0, 20) + "...\n\n" +
-                        "Verifica la transacción en Etherscan");
-
-                tvDatos.setVisibility(View.GONE);
-                btnNuevoEscaneo.setVisibility(View.VISIBLE);
-
-                Toast.makeText(CompletarPagoActivity.this,
-                        "¡Pago completado!",
-                        Toast.LENGTH_LONG).show();
+                generarQR4(hashFinal);
             });
 
         } catch (Exception e) {
@@ -246,6 +248,52 @@ public class CompletarPagoActivity extends AppCompatActivity {
                 tvEstado.setText("Error al confirmar pago:\n" + e.getMessage());
                 btnEscanear.setEnabled(true);
             });
+        }
+    }
+
+    private void generarQR4(String hashFinal) {
+        try {
+            Log.d(TAG, "Generando QR 4 con hashFinal: " + hashFinal);
+
+            // Crear JSON para QR 4
+            JSONObject json = new JSONObject();
+            json.put("tipo", "hashFinal");
+            json.put("hashFinal", hashFinal);
+
+            String datosQR = json.toString();
+
+            // Generar bitmap del QR
+            Bitmap qrBitmap = QRCodeHelper.generarQRBitmap(datosQR, 512, 512);
+
+            ivQR4.setImageBitmap(qrBitmap);
+            layoutQR4.setVisibility(View.VISIBLE);
+
+            // Ocultar elementos anteriores
+            tvEstado.setVisibility(View.GONE);
+            tvDatos.setVisibility(View.GONE);
+            btnEscanear.setVisibility(View.GONE);
+
+            // Mostrar botón para nuevo pago
+            btnNuevoEscaneo.setVisibility(View.VISIBLE);
+
+            Toast.makeText(this, "¡Pago completado!", Toast.LENGTH_LONG).show();
+
+            Log.d(TAG, "QR 4 generado y mostrado correctamente");
+
+        } catch (JSONException | WriterException e) {
+            Log.e(TAG, "Error al generar QR 4", e);
+
+            // Aunque falle el QR, mostrar mensaje de éxito
+            tvEstado.setText("¡PAGO COMPLETADO!\n\n" +
+                    "Fondos transferidos exitosamente\n\n" +
+                    "HashFinal:\n" + hashFinal.substring(0, 20) + "...\n\n" +
+                    "Error al generar QR 4");
+
+            tvDatos.setVisibility(View.GONE);
+            btnNuevoEscaneo.setVisibility(View.VISIBLE);
+
+            Toast.makeText(this, "Pago completado pero error al generar QR 4",
+                    Toast.LENGTH_LONG).show();
         }
     }
 }
