@@ -150,7 +150,7 @@ public class VenderTokensActivity extends AppCompatActivity {
             }
 
             // Convertir NPTX a unidades con decimales (10 decimales)
-            long nptxWei = (long) (nptxAmount * 1e10);
+            long nptxWei = (long) (nptxAmount * 1e18);
 
             btnVender.setEnabled(false);
             tvEstado.setVisibility(View.VISIBLE);
