@@ -24,6 +24,8 @@ import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
 import org.web3j.crypto.Credentials;
 
+import java.math.BigDecimal;
+
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class VenderTokensActivity extends AppCompatActivity {
 
@@ -142,15 +144,17 @@ public class VenderTokensActivity extends AppCompatActivity {
         }
 
         try {
-            double nptxAmount = Double.parseDouble(input);
+            BigDecimal nptxAmount = new BigDecimal(input);
 
-            if (nptxAmount <= 0) {
+            if (nptxAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 Toast.makeText(this, "Cantidad debe ser mayor a 0", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Convertir NPTX a unidades con decimales (10 decimales)
-            long nptxWei = (long) (nptxAmount * 1e18);
+            // Convertir NPTX a wei con precisión exacta
+            BigDecimal weiPerToken = new BigDecimal("1000000000000000000"); // 1e18
+            BigDecimal nptxWeiDecimal = nptxAmount.multiply(weiPerToken);
+            long nptxWei = nptxWeiDecimal.longValue();
 
             btnVender.setEnabled(false);
             tvEstado.setVisibility(View.VISIBLE);

@@ -24,6 +24,8 @@ import com.example.offlinepaymentsystem.utils.CryptoUtils;
 
 import org.web3j.crypto.Credentials;
 
+import java.math.BigDecimal;
+
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class ComprarTokensActivity extends AppCompatActivity {
 
@@ -142,21 +144,21 @@ public class ComprarTokensActivity extends AppCompatActivity {
         }
 
         try {
-            double ethAmount = Double.parseDouble(input);
+            BigDecimal ethAmount = new BigDecimal(input);
 
-            if (ethAmount <= 0) {
+            if (ethAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 Toast.makeText(this, "Cantidad debe ser mayor a 0", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Convertir ETH a wei
-            long ethWei = (long) (ethAmount * 1e18);
+            BigDecimal weiPerEth = new BigDecimal("1000000000000000000"); // 1e18
+            BigDecimal ethWeiDecimal = ethAmount.multiply(weiPerEth);
+            long ethWei = ethWeiDecimal.longValue();
 
             btnComprar.setEnabled(false);
             tvEstado.setVisibility(View.VISIBLE);
             tvEstado.setText("Obteniendo credentials...");
 
-            // Obtener credentials con biometría
             walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
                 @Override
                 public void onCredentialsObtenidos(Credentials credentials) {
@@ -164,7 +166,6 @@ public class ComprarTokensActivity extends AppCompatActivity {
                         tvEstado.setText("Comprando tokens...");
                     });
 
-                    // Ejecutar compra en hilo separado
                     new Thread(() -> {
                         try {
                             String txHash = web3Manager.comprarTokens(credentials, ethWei);
