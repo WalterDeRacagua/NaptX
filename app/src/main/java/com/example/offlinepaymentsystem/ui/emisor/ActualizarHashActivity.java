@@ -48,7 +48,7 @@ public class ActualizarHashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 
-        this.setContentView(R.layout.activity_confirmar_pago);
+        this.setContentView(R.layout.activity_actualizar_hash);
         this.initViews();
         this.setupListeners();
     }

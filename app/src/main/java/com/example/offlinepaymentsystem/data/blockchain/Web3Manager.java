@@ -839,7 +839,7 @@ public class Web3Manager {
                 gasPrice,
                 BigInteger.valueOf(200000), // Gas limit para comprarTokens
                 Constants.CONTRACT_ADDRESS,
-                BigInteger.valueOf(ethEnWei), // ← ETH a enviar
+                BigInteger.valueOf(ethEnWei), // ETH a enviar
                 encodedFunction
         );
 
@@ -855,10 +855,23 @@ public class Web3Manager {
         ).send();
 
         if (response.hasError()) {
-            throw new Exception("Error: " + response.getError().getMessage());
+            throw new Exception("Error al enviar TX: " + response.getError().getMessage());
         }
 
-        return response.getTransactionHash();
+        String txHash = response.getTransactionHash();
+        Log.d(TAG, "TX enviada exitosamente: " + txHash);
+
+        Log.d(TAG, "Esperando confirmación de la transacción...");
+        TransactionReceipt receipt = esperarReceipt(txHash);
+
+        if (!receipt.isStatusOK()) {
+            String revertReason = receipt.getRevertReason();
+            Log.e(TAG, "Transacción FALLÓ - Revert reason: " + revertReason);
+            throw new Exception("Transacción fallida en blockchain: " +
+                    (revertReason != null ? revertReason : "Error en contrato"));
+        }
+
+        return txHash;
     }
 
     public String venderTokens(Credentials credentials, long cantidadTokens) throws Exception {
@@ -898,10 +911,51 @@ public class Web3Manager {
         ).send();
 
         if (response.hasError()) {
-            throw new Exception("Error: " + response.getError().getMessage());
+            throw new Exception("Error al enviar TX: " + response.getError().getMessage());
         }
 
-        return response.getTransactionHash();
+        String txHash = response.getTransactionHash();
+        Log.d(TAG, "TX enviada exitosamente: " + txHash);
+
+        Log.d(TAG, "Esperando confirmación de la transacción...");
+        TransactionReceipt receipt = esperarReceipt(txHash);
+
+        if (!receipt.isStatusOK()) {
+            String revertReason = receipt.getRevertReason();
+            Log.e(TAG, "Transacción FALLÓ - Revert reason: " + revertReason);
+            throw new Exception("Transacción fallida en blockchain: " +
+                    (revertReason != null ? revertReason : "Error en contrato"));
+        }
+
+        return txHash;
+    }
+
+    private TransactionReceipt esperarReceipt(String txHash) throws Exception {
+        Log.d(TAG, "Esperando receipt para TX: " + txHash);
+
+        int intentos = 0;
+        int maxIntentos = 60;
+
+        while (intentos < maxIntentos) {
+            try {
+                EthGetTransactionReceipt receiptResponse = web3j
+                        .ethGetTransactionReceipt(txHash)
+                        .send();
+
+                if (receiptResponse.getTransactionReceipt().isPresent()) {
+                    TransactionReceipt receipt = receiptResponse.getTransactionReceipt().get();
+                    return receipt;
+                }
+
+            } catch (Exception e) {
+                Log.w(TAG, "Error obteniendo receipt (intento " + intentos + "): " + e.getMessage());
+            }
+
+            Thread.sleep(1000);
+            intentos++;
+        }
+
+        throw new Exception("Timeout: No se pudo confirmar la transacción después de 60 segundos");
     }
 }
 
