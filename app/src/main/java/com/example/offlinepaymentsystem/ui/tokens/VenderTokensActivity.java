@@ -36,6 +36,7 @@ public class VenderTokensActivity extends AppCompatActivity {
     private EditText etCantidadNPTX;
     private TextView tvETHARecibir;
     private Button btnVender;
+    private Button btnVenderTodo;
     private TextView tvEstado;
 
     private WalletManager walletManager;
@@ -54,12 +55,13 @@ public class VenderTokensActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvBalanceETH = findViewById(R.id.tvBalanceETH);
-        tvBalanceNPTX = findViewById(R.id.tvBalanceNPTX);
-        etCantidadNPTX = findViewById(R.id.etCantidadNPTX);
-        tvETHARecibir = findViewById(R.id.tvETHARecibir);
-        btnVender = findViewById(R.id.btnVender);
-        tvEstado = findViewById(R.id.tvEstado);
+        this.tvBalanceETH = findViewById(R.id.tvBalanceETH);
+        this.tvBalanceNPTX = findViewById(R.id.tvBalanceNPTX);
+        this.etCantidadNPTX = findViewById(R.id.etCantidadNPTX);
+        this.tvETHARecibir = findViewById(R.id.tvETHARecibir);
+        this.btnVender = findViewById(R.id.btnVender);
+        this.btnVenderTodo = findViewById(R.id.btnVenderTodo);
+        this.tvEstado = findViewById(R.id.tvEstado);
     }
 
     private void initData() {
@@ -86,6 +88,7 @@ public class VenderTokensActivity extends AppCompatActivity {
         });
 
         btnVender.setOnClickListener(v -> ejecutarVenta());
+        btnVenderTodo.setOnClickListener(v -> venderTodo());
     }
 
     private void actualizarConversion() {
@@ -151,64 +154,183 @@ public class VenderTokensActivity extends AppCompatActivity {
                 return;
             }
 
-            // Convertir NPTX a wei con precisión exacta
             BigDecimal weiPerToken = new BigDecimal("1000000000000000000"); // 1e18
             BigDecimal nptxWeiDecimal = nptxAmount.multiply(weiPerToken);
             long nptxWei = nptxWeiDecimal.longValue();
 
             btnVender.setEnabled(false);
+            btnVenderTodo.setEnabled(false);
             tvEstado.setVisibility(View.VISIBLE);
-            tvEstado.setText("Obteniendo credentials...");
+            tvEstado.setText("Verificando balance...");
 
-            // Obtener credentials con biometría
-            walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
-                @Override
-                public void onCredentialsObtenidos(Credentials credentials) {
+            new Thread(() -> {
+                try {
+                    long balanceWei = web3Manager.obtenerBalanceNPTX(addressUsuario);
+
+                    if (nptxWei > balanceWei) {
+                        final double balanceNPTX = balanceWei / 1e18;
+                        final double cantidadSolicitada = nptxWei / 1e18;
+
+                        runOnUiThread(() -> {
+                            tvEstado.setText("Balance insuficiente");
+                            Toast.makeText(VenderTokensActivity.this,
+                                    String.format("Balance insuficiente.",
+                                            cantidadSolicitada, balanceNPTX),
+                                    Toast.LENGTH_LONG).show();
+                            btnVender.setEnabled(true);
+                            btnVenderTodo.setEnabled(true);
+                        });
+                        return;
+                    }
+
                     runOnUiThread(() -> {
-                        tvEstado.setText("Vendiendo tokens...");
+                        tvEstado.setText("Obteniendo credentials...");
                     });
 
-                    // Ejecutar venta en hilo separado
-                    new Thread(() -> {
-                        try {
-                            String txHash = web3Manager.venderTokens(credentials, nptxWei);
-
+                    // Obtener credentials con biometría
+                    walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
+                        @Override
+                        public void onCredentialsObtenidos(Credentials credentials) {
                             runOnUiThread(() -> {
-                                tvEstado.setText("Venta exitosa!\n\nTX: " +
-                                        txHash.substring(0, 20) + "...");
-
-                                Toast.makeText(VenderTokensActivity.this,
-                                        "¡Tokens vendidos!", Toast.LENGTH_LONG).show();
-
-                                // Recargar balances
-                                cargarBalances();
-
-                                // Limpiar input
-                                etCantidadNPTX.setText("");
-                                btnVender.setEnabled(true);
+                                tvEstado.setText("Vendiendo tokens...");
                             });
 
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error al vender tokens", e);
+                            // Ejecutar venta en hilo separado
+                            new Thread(() -> {
+                                try {
+                                    String txHash = web3Manager.venderTokens(credentials, nptxWei);
+
+                                    runOnUiThread(() -> {
+                                        tvEstado.setText("Venta exitosa!\n\nTX: " +
+                                                txHash.substring(0, 20) + "...");
+
+                                        Toast.makeText(VenderTokensActivity.this,
+                                                "¡Tokens vendidos!", Toast.LENGTH_LONG).show();
+
+                                        cargarBalances();
+                                        etCantidadNPTX.setText("");
+                                        btnVender.setEnabled(true);
+                                        btnVenderTodo.setEnabled(true);
+                                    });
+
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error al vender tokens", e);
+                                    runOnUiThread(() -> {
+                                        tvEstado.setText("Error: " + e.getMessage());
+                                        btnVender.setEnabled(true);
+                                        btnVenderTodo.setEnabled(true);
+                                    });
+                                }
+                            }).start();
+                        }
+
+                        @Override
+                        public void onError(String mensaje) {
                             runOnUiThread(() -> {
-                                tvEstado.setText("Error: " + e.getMessage());
+                                tvEstado.setText("Error: " + mensaje);
                                 btnVender.setEnabled(true);
+                                btnVenderTodo.setEnabled(true);
                             });
                         }
-                    }).start();
-                }
+                    });
 
-                @Override
-                public void onError(String mensaje) {
+                } catch (Exception e) {
+                    Log.e(TAG, "Error al verificar balance", e);
                     runOnUiThread(() -> {
-                        tvEstado.setText("Error: " + mensaje);
+                        tvEstado.setText("Error al verificar balance");
+                        Toast.makeText(VenderTokensActivity.this,
+                                "Error al verificar balance: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
                         btnVender.setEnabled(true);
+                        btnVenderTodo.setEnabled(true);
                     });
                 }
-            });
+            }).start();
 
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Cantidad inválida", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void venderTodo() {
+        btnVender.setEnabled(false);
+        btnVenderTodo.setEnabled(false);
+        tvEstado.setVisibility(View.VISIBLE);
+        tvEstado.setText("Consultando balance...");
+
+        new Thread(() -> {
+            try {
+                // Obtener balance EXACTO de blockchain
+                long balanceWei = web3Manager.obtenerBalanceNPTX(addressUsuario);
+
+                if (balanceWei == 0) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "No tienes tokens para vender",
+                                Toast.LENGTH_SHORT).show();
+                        btnVender.setEnabled(true);
+                        btnVenderTodo.setEnabled(true);
+                    });
+                    return;
+                }
+
+                runOnUiThread(() -> {
+                    tvEstado.setText("Obteniendo credentials...");
+
+                    // Vender la cantidad EXACTA
+                    walletManager.obtenerCredentials(new ObtenerCredentialsCallback() {
+                        @Override
+                        public void onCredentialsObtenidos(Credentials credentials) {
+                            runOnUiThread(() -> {
+                                tvEstado.setText("Vendiendo todos los tokens...");
+                            });
+
+                            new Thread(() -> {
+                                try {
+                                    // Usar balanceWei directamente (SIN conversión)
+                                    String txHash = web3Manager.venderTokens(credentials, balanceWei);
+
+                                    runOnUiThread(() -> {
+                                        tvEstado.setText("Venta exitosa!\n\nTX: " +
+                                                txHash.substring(0, 20) + "...");
+                                        Toast.makeText(VenderTokensActivity.this,
+                                                "¡Todos los tokens vendidos!",
+                                                Toast.LENGTH_LONG).show();
+                                        cargarBalances();
+                                        etCantidadNPTX.setText("");
+                                        btnVender.setEnabled(true);
+                                        btnVenderTodo.setEnabled(true);
+                                    });
+
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error al vender", e);
+                                    runOnUiThread(() -> {
+                                        tvEstado.setText("Error: " + e.getMessage());
+                                        btnVender.setEnabled(true);
+                                        btnVenderTodo.setEnabled(true);
+                                    });
+                                }
+                            }).start();
+                        }
+
+                        @Override
+                        public void onError(String mensaje) {
+                            runOnUiThread(() -> {
+                                tvEstado.setText("Error: " + mensaje);
+                                btnVender.setEnabled(true);
+                                btnVenderTodo.setEnabled(true);
+                            });
+                        }
+                    });
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error al consultar balance",
+                            Toast.LENGTH_SHORT).show();
+                    btnVender.setEnabled(true);
+                    btnVenderTodo.setEnabled(true);
+                });
+            }
+        }).start();
     }
 }

@@ -934,7 +934,7 @@ public class Web3Manager {
         Log.d(TAG, "Esperando receipt para TX: " + txHash);
 
         int intentos = 0;
-        int maxIntentos = 60;
+        int maxIntentos = 120;
 
         while (intentos < maxIntentos) {
             try {

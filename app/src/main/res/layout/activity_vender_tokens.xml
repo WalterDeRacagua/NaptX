@@ -104,16 +104,35 @@
                 android:textColor="#555555"/>
         </LinearLayout>
 
-        <!-- Botón Vender -->
-        <Button
-            android:id="@+id/btnVender"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Vender Tokens"
-            android:textSize="18sp"
-            android:padding="16dp"
-            android:backgroundTint="#1976D2"
-            android:layout_marginBottom="16dp"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- Botón Vender cantidad ingresada -->
+            <Button
+                android:id="@+id/btnVender"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Vender"
+                android:textSize="16sp"
+                android:padding="16dp"
+                android:backgroundTint="#1976D2"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btnVenderTodo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Vender Todo"
+                android:textSize="16sp"
+                android:padding="16dp"
+                android:backgroundTint="#FF6B00"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
 
         <!-- Estado -->
         <TextView
