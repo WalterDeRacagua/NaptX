@@ -419,45 +419,41 @@ public class Web3Manager {
         return ethSendTransaction.getTransactionHash();
     }
 
-    /**
-     * Aprueba tokens para que el contrato pueda gastarlos
-     */
-    public String aprobarTokens(
-            org.web3j.crypto.Credentials credentials,
+
+    public String aprobarTokensAReceptor(
+            Credentials credentials,
+            String receptorAddress,
             long amount
     ) throws Exception {
-        Log.d(TAG, "Aprobar tokens: " + amount);
+        Log.d(TAG, "Aprobar " + amount + " wei al receptor: " + receptorAddress);
 
         // Función approve(address spender, uint256 amount)
         Function function = new Function(
                 "approve",
                 Arrays.asList(
-                        new Address(Constants.CONTRACT_ADDRESS),  // spender = el contrato
-                        new Uint256(BigInteger.valueOf(amount))   // amount
+                        new Address(receptorAddress),  // ← RECEPTOR (no CONTRACT_ADDRESS)
+                        new Uint256(BigInteger.valueOf(amount))
                 ),
                 Collections.emptyList()
         );
 
         String encodedFunction = FunctionEncoder.encode(function);
-        Log.d(TAG, "Función encodeada: " + encodedFunction);
 
         // Obtener nonce de transacción
-        EthGetTransactionCount ethGetTransactionCount = web3j.ethGetTransactionCount(
+        BigInteger txNonce = web3j.ethGetTransactionCount(
                 credentials.getAddress(),
                 DefaultBlockParameterName.LATEST
-        ).send();
-        BigInteger txNonce = ethGetTransactionCount.getTransactionCount();
+        ).send().getTransactionCount();
 
         // Obtener gas price
-        EthGasPrice ethGasPrice = web3j.ethGasPrice().send();
-        BigInteger gasPrice = ethGasPrice.getGasPrice();
+        BigInteger gasPrice = web3j.ethGasPrice().send().getGasPrice();
 
         // Crear RawTransaction
         RawTransaction rawTransaction = RawTransaction.createTransaction(
                 txNonce,
                 gasPrice,
-                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_APPROVE),  // Gas limit para approve
-                Constants.CONTRACT_ADDRESS,
+                BigInteger.valueOf(CryptoConstants.GAS_LIMIT_APPROVE),
+                Constants.CONTRACT_ADDRESS,  // El contrato sigue siendo el ERC20
                 encodedFunction
         );
 
@@ -473,12 +469,25 @@ public class Web3Manager {
         EthSendTransaction ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send();
 
         if (ethSendTransaction.hasError()) {
-            throw new Exception("Error: " + ethSendTransaction.getError().getMessage());
+            throw new Exception("Error al aprobar: " +
+                    ethSendTransaction.getError().getMessage());
         }
 
         String transactionHash = ethSendTransaction.getTransactionHash();
-        Log.d(TAG, "Approve Transaction Hash: " + transactionHash);
+        Log.d(TAG, "Approve TX enviada: " + transactionHash);
 
+        // Esperar confirmación
+        Log.d(TAG, "Esperando confirmación del approve...");
+        TransactionReceipt receipt = esperarReceipt(transactionHash);
+
+        if (!receipt.isStatusOK()) {
+            String revertReason = receipt.getRevertReason();
+            Log.e(TAG, "Approve falló - Revert reason: " + revertReason);
+            throw new Exception("Approve falló en blockchain: " +
+                    (revertReason != null ? revertReason : "Error en contrato"));
+        }
+
+        Log.d(TAG, "Approve confirmado exitosamente");
         return transactionHash;
     }
 
@@ -568,6 +577,13 @@ public class Web3Manager {
                     TransactionReceipt receipt = receiptResponse.getTransactionReceipt().get();
 
                     Log.d(TAG, "Receipt obtenido, buscando evento... ");
+
+                    if (!receipt.isStatusOK()) {
+                        String revertReason = receipt.getRevertReason();
+
+                        throw new Exception("Transacción fallida en blockchain: " +
+                                (revertReason != null ? revertReason : "Error en contrato"));
+                    }
 
                     for (org.web3j.protocol.core.methods.response.Log log: receipt.getLogs()) {
                         if (log.getTopics().isEmpty()){
@@ -749,6 +765,7 @@ public class Web3Manager {
 
                     throw new Exception("No se encontró el evento PagoConfirmado en el receipt");
                 }
+
 
                 Log.d(TAG, "Esperando confirmación... intento " + (intentos + 1) + "/" + maxIntentos);
                 Thread.sleep(CryptoConstants.DELAY_ENTRE_INTENTOS_MS);

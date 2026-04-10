@@ -271,40 +271,44 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         });
     }
 
-    private void enviarTransaccion(org.web3j.crypto.Credentials credentials,
-                                   String[] receptores, long[] limites,
-                                   long timestamp, long nonce, byte[] firma) {
+    private void enviarTransaccion(
+            org.web3j.crypto.Credentials credentials,
+            String[] receptores,
+            long[] limites,
+            long timestamp,
+            long nonce,
+            byte[] firma
+    ) {
         try {
             runOnUiThread(() -> {
-                tvInfoSync.setText("Aprobando tokens...");
+                tvInfoSync.setText("Aprobando tokens a receptores...");
+                btnSincronizarBlockchain.setEnabled(false);
             });
 
-            // PASO 1: Calcular suma total
-            long sumaTotal = 0;
-            for (long limite : limites) {
-                sumaTotal += limite;
+            for (int i = 0; i < receptores.length; i++) {
+                final int index = i;
+
+                runOnUiThread(() -> {
+                    tvInfoSync.setText(
+                            "Aprobando receptor " + (index + 1) + "/" + receptores.length +
+                                    "\n\n" + receptores[index].substring(0, 10) + "..."
+                    );
+                });
+
+                // Aprobar a este receptor específico
+                String txHashApprove = web3Manager.aprobarTokensAReceptor(
+                        credentials,
+                        receptores[i],
+                        limites[i]
+                );
+
             }
 
-            // PASO 2: Aprobar tokens
-            String txHashApprove = web3Manager.aprobarTokens(credentials, sumaTotal);
-
-
             runOnUiThread(() -> {
-                tvInfoSync.setText("Tokens aprobados\n Esperando confirmación...");
+                tvInfoSync.setText("Approves confirmados\n\nConfigurando whitelist...");
             });
 
-            // PASO 3: ESPERAR CONFIRMACIÓN REAL (no solo delay)
-            boolean confirmada = esperarConfirmacion(txHashApprove, 60); // 60 segundos max
-
-            if (!confirmada) {
-                throw new Exception("Timeout: La transacción approve no se confirmó");
-            }
-
-            runOnUiThread(() -> {
-                tvInfoSync.setText("Approve confirmado\n\nConfigurando whitelist...");
-            });
-
-            // PASO 4: Configurar whitelist
+            // Configurar whitelist
             String txHash = web3Manager.configurarWhitelist(
                     credentials,
                     receptores,
@@ -315,10 +319,9 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
             );
 
             runOnUiThread(() -> {
-                tvInfoSync.setText("SINCRONIZADO\n\n" +
-                        "Approve TX:\n" + txHashApprove + "\n\n" +
-                        "Whitelist TX:\n" + txHash);
-                Toast.makeText(this,
+                tvInfoSync.setText("SINCRONIZADO\n\nWhitelist TX:\n" +
+                        txHash.substring(0, 20) + "...");
+                Toast.makeText(GestionarWhitelistActivity.this,
                         "Whitelist sincronizada con blockchain",
                         Toast.LENGTH_LONG).show();
                 btnSincronizarBlockchain.setEnabled(true);
@@ -327,7 +330,9 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
         } catch (Exception e) {
             runOnUiThread(() -> {
                 tvInfoSync.setText("Error: " + e.getMessage());
-                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(GestionarWhitelistActivity.this,
+                        "Error: " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
                 btnSincronizarBlockchain.setEnabled(true);
             });
         }
@@ -345,23 +350,33 @@ public class GestionarWhitelistActivity extends AppCompatActivity {
 
         while (intentos < maxIntentos) {
             try {
-                org.web3j.protocol.core.methods.response.EthGetTransactionReceipt receipt =
+                org.web3j.protocol.core.methods.response.EthGetTransactionReceipt receiptResponse =
                         web3Manager.obtenerReceipt(txHash);
 
-                if (receipt.getTransactionReceipt().isPresent()) {
+                if (receiptResponse.getTransactionReceipt().isPresent()) {
+
+                    org.web3j.protocol.core.methods.response.TransactionReceipt receipt =
+                            receiptResponse.getTransactionReceipt().get();
+
+                    if (!receipt.isStatusOK()) {
+                        String revertReason = receipt.getRevertReason();
+                        throw new Exception("Transacción falló en blockchain: " +
+                                (revertReason != null ? revertReason : "Error desconocido"));
+                    }
+
                     return true;
                 }
 
                 Thread.sleep(2000);
                 intentos++;
 
-            } catch (Exception e) {
-                Thread.sleep(2000);
-                intentos++;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw e;
             }
         }
 
-        return false; // Timeout
+        return false;
     }
     private long generarNonce() {
         SecureRandom random = new SecureRandom();
